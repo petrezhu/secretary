@@ -1,0 +1,30 @@
+{
+  "systems": [
+    {
+      "name": "Secretary",
+      "description": "个人数字助理系统 — 主动监控、意图路由、简报推送",
+      "location": "${SECRETARY_HOME}",
+      "commands": {
+        "start": "secretary start",
+        "stop": "secretary stop",
+        "status": "secretary check",
+        "serve": "secretary serve --port 8901"
+      },
+      "port": 8901,
+      "notes": "daemon + gateway 双进程"
+    },
+    {
+      "name": "Hermes Agent",
+      "description": "AI Agent 框架 — QQ Bot / CLI / Gateway",
+      "location": "~/.hermes",
+      "commands": {
+        "status": "hermes status",
+        "restart": "hermes gateway restart",
+        "send": "hermes send --to <target> <message>"
+      },
+      "port": 18789,
+      "notes": "QQ Bot 集成"
+    }
+  ],
+  "updated_at": "2026-09-08"
+}

@@ -1,0 +1,6 @@
+name: secretary-gateway
+version: "0.1.0"
+description: "Route inbound QQ messages through Secretary for smart dispatch. Secretary handles simple intents directly; complex queries pass through to Hermes agent."
+author: "Secretary Team"
+hooks:
+  - pre_gateway_dispatch

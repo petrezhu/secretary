@@ -1,0 +1,43 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.pytest_cache/
+.ruff_cache/
+
+# ── 敏感文件 ─────────────────────────────────────────────
+.env
+*.env.local
+config/local.json
+config/local_stocks.json
+
+# ── 运行时数据 ───────────────────────────────────────────
+**/audit.jsonl
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ── IDE ──────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── External symlinks ───────────────────────────────────
+plugins/gateway-interceptor
+
+# ── Virtual environments ────────────────────────────────
+.venv/
+venv/
+
+# ── Coverage ────────────────────────────────────────────
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml

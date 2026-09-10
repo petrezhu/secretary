@@ -1,0 +1,33 @@
+# Morning briefing template (YAML)
+# Used by the morning briefing generator
+
+morning:
+  greeting_prefix: "☀️ 早安！"
+  focus_prefix: "🎯 今日重点："
+  tasks_prefix: "📋 待处理任务："
+  stuck_prefix: "⚠️ 卡住的目标："
+  completed_prefix: "✅ 昨日完成："
+
+  closing:
+    high_energy: "💪 今天加油！有什么需要帮忙的随时说。"
+    medium_energy: "👍 稳步推进就好，有事随时叫我。"
+    low_energy: "🫂 今天量力而行，我一直在。"
+
+  # Energy thresholds for closing selection
+  energy_thresholds:
+    high: 70
+    medium: 40
+
+  # Max items to show in each section
+  max_stuck_items: 3
+  max_completed_items: 3
+
+  # Weekday names
+  weekdays:
+    - "周一"
+    - "周二"
+    - "周三"
+    - "周四"
+    - "周五"
+    - "周六"
+    - "周日"

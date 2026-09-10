@@ -1,0 +1,52 @@
+# Secretary default configuration
+# Personal paths are loaded from .env (see .env.example)
+secretary:
+  tick_interval: 30
+
+  monitor:
+    checks:
+      - name: health
+        interval: 3600
+      - name: deadman
+        interval: 1800
+      - name: resource
+        interval: 60
+
+    thresholds:
+      memory_percent: 95
+      cpu_percent: 95
+      disk_percent: 95
+      cpu_window_minutes: 5
+
+  notify:
+    channels:
+      qq:
+        adapter: hermes
+      email:
+        host: smtp.qq.com
+        port: 465
+
+    rules:
+      - level: critical
+        channel: qq
+        immediate: true
+      - level: warning
+        channel: qq
+        batch: true
+        max_per_hour: 5
+      - level: info
+        channel: qq
+        schedule: "08:00"
+
+  engine:
+    resource_guard:
+      check_before: [llm_call, heavy_computation]
+      backoff_initial: 600
+      backoff_multiplier: 2
+      backoff_max: 9600
+
+  harness:
+    default: hermes
+    hermes:
+      api_url: http://127.0.0.1:8317/v1
+      api_key_env: CLI_PROXY_API_KEY
