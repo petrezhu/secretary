@@ -1,0 +1,98 @@
+<svg viewBox="0 0 700 620" xmlns="http://www.w3.org/2000/svg" font-family="monospace">
+  <defs>
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e5e5" stroke-width="0.5"/>
+    </pattern>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="5" refY="10" orient="auto">
+      <path d="M0,0 L10,0 L5,10 z" fill="#aaa"/>
+    </marker>
+    <marker id="arr-green" markerWidth="10" markerHeight="10" refX="5" refY="10" orient="auto">
+      <path d="M0,0 L10,0 L5,10 z" fill="#27ae60"/>
+    </marker>
+    <marker id="arr-orange" markerWidth="10" markerHeight="10" refX="5" refY="10" orient="auto">
+      <path d="M0,0 L10,0 L5,10 z" fill="#e67e22"/>
+    </marker>
+    <marker id="arr-red" markerWidth="10" markerHeight="10" refX="5" refY="10" orient="auto">
+      <path d="M0,0 L10,0 L5,10 z" fill="#e74c3c"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="700" height="620" fill="#fafafa"/>
+  <rect width="700" height="620" fill="url(#grid)"/>
+
+  <!-- Title -->
+  <text x="40" y="35" font-size="14" fill="#333" font-weight="bold">SECRETARY — 消息路由流程</text>
+  <text x="350" y="35" font-size="11" fill="#888">[ 网关拦截 ]</text>
+
+  <!-- Vertical guide -->
+  <line x1="350" y1="55" x2="350" y2="580" stroke="#e5e5e5" stroke-width="1" stroke-dasharray="6,4"/>
+
+  <!-- Step 1: 用户消息 -->
+  <rect x="240" y="55" rx="20" ry="20" width="220" height="40" fill="#3498db" fill-opacity="0.1" stroke="#3498db" stroke-width="1.5"/>
+  <text x="350" y="80" font-size="12" fill="#3498db" text-anchor="middle" font-weight="bold">用户消息 (QQ Bot)</text>
+
+  <!-- Arrow -->
+  <line x1="350" y1="95" x2="350" y2="120" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Step 2: 网关拦截插件 -->
+  <rect x="180" y="120" rx="6" ry="6" width="340" height="50" fill="#9b59b6" fill-opacity="0.08" stroke="#9b59b6" stroke-width="1.5"/>
+  <text x="350" y="143" font-size="12" fill="#9b59b6" text-anchor="middle" font-weight="bold">gateway-interceptor 插件</text>
+  <text x="350" y="160" font-size="9" fill="#666" text-anchor="middle">pre_gateway_dispatch 钩子</text>
+
+  <!-- Arrow -->
+  <line x1="350" y1="170" x2="350" y2="195" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Step 3: ASR/OCR -->
+  <rect x="200" y="195" rx="6" ry="6" width="300" height="45" fill="#f39c12" fill-opacity="0.08" stroke="#f39c12" stroke-width="1.2"/>
+  <text x="350" y="215" font-size="11" fill="#f39c12" text-anchor="middle" font-weight="bold">ASR / OCR 增强</text>
+  <text x="350" y="232" font-size="9" fill="#666" text-anchor="middle">语音→文字 · 图片→文字</text>
+
+  <!-- Arrow -->
+  <line x1="350" y1="240" x2="350" y2="265" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Step 4: POST /api/inbound -->
+  <rect x="210" y="265" rx="6" ry="6" width="280" height="40" fill="#3498db" fill-opacity="0.08" stroke="#3498db" stroke-width="1.5"/>
+  <text x="350" y="290" font-size="12" fill="#3498db" text-anchor="middle" font-weight="bold">POST /api/inbound → Secretary</text>
+
+  <!-- Arrow to decision -->
+  <line x1="350" y1="305" x2="350" y2="335" stroke="#aaa" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Decision Diamond -->
+  <polygon points="350,335 430,375 350,415 270,375" fill="#f39c12" fill-opacity="0.08" stroke="#f39c12" stroke-width="1.5"/>
+  <text x="350" y="372" font-size="10" fill="#f39c12" text-anchor="middle" font-weight="bold">意图</text>
+  <text x="350" y="385" font-size="10" fill="#f39c12" text-anchor="middle" font-weight="bold">命中？</text>
+
+  <!-- Branch: handle (left) -->
+  <line x1="270" y1="375" x2="150" y2="375" stroke="#27ae60" stroke-width="1.5" marker-end="url(#arr-green)"/>
+  <text x="210" y="368" font-size="9" fill="#27ae60" text-anchor="middle">handle</text>
+
+  <!-- Branch: allow (right) -->
+  <line x1="430" y1="375" x2="550" y2="375" stroke="#e67e22" stroke-width="1.5" marker-end="url(#arr-orange)"/>
+  <text x="490" y="368" font-size="9" fill="#e67e22" text-anchor="middle">allow</text>
+
+  <!-- Left: 直接回复 -->
+  <rect x="50" y="350" rx="6" ry="6" width="100" height="50" fill="#27ae60" fill-opacity="0.1" stroke="#27ae60" stroke-width="1.5"/>
+  <text x="100" y="373" font-size="10" fill="#27ae60" text-anchor="middle" font-weight="bold">直接</text>
+  <text x="100" y="388" font-size="10" fill="#27ae60" text-anchor="middle" font-weight="bold">回复</text>
+  <text x="100" y="415" font-size="8" fill="#999" text-anchor="middle">跳过 Agent</text>
+
+  <!-- Right: 交给 Agent -->
+  <rect x="550" y="350" rx="6" ry="6" width="110" height="50" fill="#e67e22" fill-opacity="0.1" stroke="#e67e22" stroke-width="1.5"/>
+  <text x="605" y="373" font-size="10" fill="#e67e22" text-anchor="middle" font-weight="bold">交给</text>
+  <text x="605" y="388" font-size="10" fill="#e67e22" text-anchor="middle" font-weight="bold">Agent</text>
+  <text x="605" y="415" font-size="8" fill="#999" text-anchor="middle">LLM 处理</text>
+
+  <!-- Fail-open path (bottom) -->
+  <line x1="350" y1="415" x2="350" y2="460" stroke="#aaa" stroke-width="1" stroke-dasharray="4,3"/>
+  <rect x="230" y="460" rx="6" ry="6" width="240" height="45" fill="#e74c3c" fill-opacity="0.06" stroke="#e74c3c" stroke-width="1.2" stroke-dasharray="5,3"/>
+  <text x="350" y="480" font-size="10" fill="#e74c3c" text-anchor="middle" font-weight="bold">Secretary 不可达？</text>
+  <text x="350" y="496" font-size="9" fill="#666" text-anchor="middle">fail-open → 交给 Agent</text>
+
+  <!-- Bottom summary -->
+  <rect x="80" y="535" rx="6" ry="6" width="540" height="35" fill="none" stroke="#ddd" stroke-width="1"/>
+  <text x="350" y="557" font-size="10" fill="#666" text-anchor="middle">规则优先：命中意图即时回复（0 LLM token）· 未命中 → Agent · 故障 → fail-open</text>
+
+  <!-- Bottom note -->
+  <text x="350" y="605" font-size="9" fill="#999" text-anchor="middle">免打扰时段（23:00–08:00）：未识别消息轻柔回绝，不惊扰 Agent</text>
+</svg>

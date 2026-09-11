@@ -17,7 +17,7 @@ Secretary 是一个**主动式**个人助理，不等用户提问，而是持续
 
 ## 架构概览
 
-![架构概览](docs/assets/architecture.svg)
+![架构概览](docs/assets/architecture-zh.svg)
 
 ## 模块详解
 
@@ -86,7 +86,7 @@ Secretary 通过 Hermes 插件机制与 Agent 协同工作：
 
 注册 `pre_gateway_dispatch` 钩子，拦截消息并经 ASR/OCR 增强后路由：
 
-![消息路由流程](docs/assets/message-flow.svg)
+![消息路由流程](docs/assets/message-flow-zh.svg)
 
 **配置项（环境变量）：**
 | 变量 | 默认值 | 说明 |
