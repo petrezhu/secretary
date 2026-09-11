@@ -11,19 +11,28 @@ logger = logging.getLogger(__name__)
 
 # Keywords to trigger memory query
 _MEMORY_QUERY_KW = {
-    "我之前说过什么", "我说过什么", "之前说过什么",
-    "有什么记忆", "记忆", "你记得什么",
-      "我打算做什么",
+    "我之前说过什么",
+    "我说过什么",
+    "之前说过什么",
+    "有什么记忆",
+    "记忆",
+    "你记得什么",
+    "我打算做什么",
 }
 
 # Keywords to trigger memory add
 _MEMORY_ADD_KW = {
-    "记住这个", "记下这个", "记住", "记下",
+    "记住这个",
+    "记下这个",
+    "记住",
+    "记下",
 }
 
 # Keywords to trigger pending intents
 _MEMORY_PENDING_KW = {
-      "待办意图", "有什么打算", "未完成意图",
+    "待办意图",
+    "有什么打算",
+    "未完成意图",
 }
 
 
@@ -82,6 +91,7 @@ class MemoryAddHandler:
 
         # Check for explicit "记住XXX" pattern
         import re
+
         match = re.match(r"(?:记住|记下)(?:这个)?[：:\s]*(.+)", text)
         if not match:
             return None

@@ -98,9 +98,7 @@ class QQBotAdapter:
                 self._token = data.get("access_token", "")
                 return self._token
 
-    async def _send_message(
-        self, token: str, channel_id: str, content: str
-    ) -> dict[str, Any]:
+    async def _send_message(self, token: str, channel_id: str, content: str) -> dict[str, Any]:
         """Send a message to a QQ channel via the Bot API."""
         import aiohttp
 
@@ -221,15 +219,19 @@ class AdapterRegistry:
     async def _send_both(self, text: str, target: str) -> dict[str, Any]:
         """Send to all registered adapters; return first success or last failure."""
         results = []
-        for name, adapter in self._adapters.items():
+        for _name, adapter in self._adapters.items():
             result = await adapter.send(text, target)
             results.append(result)
             if result.get("success"):
                 return result
 
         # All failed — return the last result
-        return results[-1] if results else {
-            "success": False,
-            "channel": "both",
-            "error": "No adapters registered",
-        }
+        return (
+            results[-1]
+            if results
+            else {
+                "success": False,
+                "channel": "both",
+                "error": "No adapters registered",
+            }
+        )

@@ -11,10 +11,18 @@ from secretary.gateway.intents.base import IntentContext
 logger = logging.getLogger(__name__)
 
 _HELP_KW = {
-    "/help", "帮助", "你能做什么", "你会什么",
-    "有什么指令", "有什么命令", "有什么功能",
-    "有啥指令", "有啥命令", "有啥功能",
-    "怎么用你", "你会干嘛",
+    "/help",
+    "帮助",
+    "你能做什么",
+    "你会什么",
+    "有什么指令",
+    "有什么命令",
+    "有什么功能",
+    "有啥指令",
+    "有啥命令",
+    "有啥功能",
+    "怎么用你",
+    "你会干嘛",
 }
 
 # Domain labels for display

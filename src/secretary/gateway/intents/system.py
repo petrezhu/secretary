@@ -9,8 +9,17 @@ from pathlib import Path
 from secretary.gateway.intents.base import IntentContext
 
 _HEALTH_KW = {
-    "服务器", "系统状态", "内存", "磁盘", "cpu", "CPU",
-    "健康状态", "健康检查", "健康", "service", "服务状态",
+    "服务器",
+    "系统状态",
+    "内存",
+    "磁盘",
+    "cpu",
+    "CPU",
+    "健康状态",
+    "健康检查",
+    "健康",
+    "service",
+    "服务状态",
 }
 
 _CHECKPOINT_KW = {"上次存档", "存档点", "checkpoint"}

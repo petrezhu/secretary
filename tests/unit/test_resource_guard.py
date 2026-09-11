@@ -13,6 +13,7 @@ from secretary.monitor.resource_guard import STATE_FILE, ResourceGuard, Resource
 
 # ── helpers ────────────────────────────────────────────────────────────
 
+
 def _mem(pct: float) -> SimpleNamespace:
     return SimpleNamespace(percent=pct)
 
@@ -53,6 +54,7 @@ def _make_guard(
 
 
 # ── tests ──────────────────────────────────────────────────────────────
+
 
 class TestCheckResources:
     """check_resources returns True when all resources are below threshold."""

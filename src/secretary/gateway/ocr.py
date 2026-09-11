@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 # Default OCR models (in fallback order)
 # These are known to support vision/image input
 DEFAULT_OCR_MODELS = [
-    "deepseek-v4-flash",      # Fast, good vision support
-    "deepseek-v4-pro",        # More capable fallback
+    "deepseek-v4-flash",  # Fast, good vision support
+    "deepseek-v4-pro",  # More capable fallback
 ]
 
 # API configuration
@@ -62,7 +62,13 @@ def _image_to_base64_url(image_path_or_url: str) -> str:
         if not path.exists():
             raise FileNotFoundError(f"Image not found: {image_path_or_url}")
         suffix = path.suffix.lower()
-        mime_map = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp"}
+        mime_map = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".gif": "image/gif",
+            ".webp": "image/webp",
+        }
         mime = mime_map.get(suffix, "image/jpeg")
         b64 = base64.b64encode(path.read_bytes()).decode()
         return f"data:{mime};base64,{b64}"

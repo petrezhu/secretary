@@ -97,13 +97,9 @@ def test_golden_message_routing(text, expected):
     registry = build_default_registry()
     claimed = _find_claimed(registry, text)
     if expected is None:
-        assert claimed is None, (
-            f"{text!r}: 期望放行 Agent，但被意图 '{claimed}' 认领"
-        )
+        assert claimed is None, f"{text!r}: 期望放行 Agent，但被意图 '{claimed}' 认领"
     else:
-        assert claimed == expected, (
-            f"{text!r}: 期望意图 '{expected}'，实际被 '{claimed}' 认领"
-        )
+        assert claimed == expected, f"{text!r}: 期望意图 '{expected}'，实际被 '{claimed}' 认领"
 
 
 def test_golden_set_stats():

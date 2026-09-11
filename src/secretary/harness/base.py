@@ -61,9 +61,7 @@ class BaseHarness(ABC):
     async def health_check(self) -> bool:
         """Check backend availability (no retry — fast fail)."""
         try:
-            return await asyncio.wait_for(
-                self._do_health_check(), timeout=self.timeout_seconds
-            )
+            return await asyncio.wait_for(self._do_health_check(), timeout=self.timeout_seconds)
         except asyncio.TimeoutError:
             logger.warning("Health check timed out for %s", type(self).__name__)
             return False
@@ -74,20 +72,16 @@ class BaseHarness(ABC):
     # ── Abstract methods for subclasses ───────────────────────────────
 
     @abstractmethod
-    async def _do_llm_call(self, prompt: str, context: dict[str, Any]) -> str:
-        ...
+    async def _do_llm_call(self, prompt: str, context: dict[str, Any]) -> str: ...
 
     @abstractmethod
-    async def _do_execute_tool(self, tool: str, params: dict[str, Any]) -> dict[str, Any]:
-        ...
+    async def _do_execute_tool(self, tool: str, params: dict[str, Any]) -> dict[str, Any]: ...
 
     @abstractmethod
-    async def _do_get_context(self, session_id: str) -> dict[str, Any]:
-        ...
+    async def _do_get_context(self, session_id: str) -> dict[str, Any]: ...
 
     @abstractmethod
-    async def _do_health_check(self) -> bool:
-        ...
+    async def _do_health_check(self) -> bool: ...
 
     # ── Helpers ───────────────────────────────────────────────────────
 
@@ -96,14 +90,14 @@ class BaseHarness(ABC):
         last_exc: Exception | None = None
         for attempt in range(1, self.max_retries + 1):
             try:
-                return await asyncio.wait_for(
-                    fn(*args), timeout=self.timeout_seconds
-                )
+                return await asyncio.wait_for(fn(*args), timeout=self.timeout_seconds)
             except asyncio.TimeoutError as exc:
                 last_exc = exc
                 logger.warning(
                     "%s attempt %d/%d timed out",
-                    fn.__name__, attempt, self.max_retries,
+                    fn.__name__,
+                    attempt,
+                    self.max_retries,
                 )
             except HarnessError:
                 raise  # don't retry harness-level errors
@@ -111,7 +105,10 @@ class BaseHarness(ABC):
                 last_exc = exc
                 logger.warning(
                     "%s attempt %d/%d failed: %s",
-                    fn.__name__, attempt, self.max_retries, exc,
+                    fn.__name__,
+                    attempt,
+                    self.max_retries,
+                    exc,
                 )
             if attempt < self.max_retries:
                 await asyncio.sleep(self.retry_backoff * attempt)

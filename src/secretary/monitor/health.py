@@ -141,7 +141,7 @@ class HealthChecker:
             }
 
         try:
-            with open(self._token_path, "r", encoding="utf-8") as f:
+            with open(self._token_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             expires_at = data.get("expires_at")
@@ -185,4 +185,3 @@ class HealthChecker:
                 "severity": "warning",
                 "message": f"Token文件读取失败: {e}",
             }
-

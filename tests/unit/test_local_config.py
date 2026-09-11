@@ -75,7 +75,6 @@ def test_sector_overrides_merges_keywords(tmp_path):
 
 
 def test_sector_overrides_skips_unknown_sector(tmp_path):
-    from secretary.wealth.sector_analysis import SECTOR_RULES
 
     p = tmp_path / "local_stocks.json"
     p.write_text(

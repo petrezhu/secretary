@@ -138,39 +138,49 @@ def check_discipline(
     checks: list[dict[str, Any]] = []
 
     if action == "buy" and price_position >= 0.85:
-        checks.append({
-            "name": f"{name} 追高风险",
-            "status": "alert",
-            "detail": f"在52周高位({price_position:.0%})买入属于追高行为",
-        })
+        checks.append(
+            {
+                "name": f"{name} 追高风险",
+                "status": "alert",
+                "detail": f"在52周高位({price_position:.0%})买入属于追高行为",
+            }
+        )
 
     if action == "sell" and price_position <= 0.15:
-        checks.append({
-            "name": f"{name} 恐慌卖出风险",
-            "status": "alert",
-            "detail": f"在52周低位({price_position:.0%})卖出可能是恐慌性抛售",
-        })
+        checks.append(
+            {
+                "name": f"{name} 恐慌卖出风险",
+                "status": "alert",
+                "detail": f"在52周低位({price_position:.0%})卖出可能是恐慌性抛售",
+            }
+        )
 
     if action == "buy" and price_position >= 0.7:
-        checks.append({
-            "name": f"{name} 高位加仓提醒",
-            "status": "warning",
-            "detail": f"在52周偏高位置({price_position:.0%})加仓需谨慎",
-        })
+        checks.append(
+            {
+                "name": f"{name} 高位加仓提醒",
+                "status": "warning",
+                "detail": f"在52周偏高位置({price_position:.0%})加仓需谨慎",
+            }
+        )
 
     if action == "sell" and price_position <= 0.3:
-        checks.append({
-            "name": f"{name} 低位减仓提醒",
-            "status": "warning",
-            "detail": f"在52周偏低位置({price_position:.0%})减仓可能割在底部",
-        })
+        checks.append(
+            {
+                "name": f"{name} 低位减仓提醒",
+                "status": "warning",
+                "detail": f"在52周偏低位置({price_position:.0%})减仓可能割在底部",
+            }
+        )
 
     if not checks:
-        checks.append({
-            "name": f"{name} 纪律检查",
-            "status": "ok",
-            "detail": "交易行为符合纪律要求",
-        })
+        checks.append(
+            {
+                "name": f"{name} 纪律检查",
+                "status": "ok",
+                "detail": "交易行为符合纪律要求",
+            }
+        )
 
     return checks
 

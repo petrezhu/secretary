@@ -52,6 +52,7 @@ async def collect_briefing_data(repo: Repository) -> BriefingContext:
 
     # 5. Overdue goals (past deadline)
     from secretary.coach.overdue import GoalOverdueDetector
+
     overdue_detector = GoalOverdueDetector()
     all_goals = await repo.get_weekly_goals() + await repo.get_longterm_goals()
     overdue = overdue_detector.detect(all_goals)

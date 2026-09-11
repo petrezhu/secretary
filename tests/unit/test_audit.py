@@ -128,7 +128,7 @@ class TestAuditLogQuery:
         path = tmp_path / "audit.jsonl"
         audit = AuditLog(path=path)
 
-        now = datetime(2026, 8, 31, 12, 0, 0)
+        datetime(2026, 8, 31, 12, 0, 0)
         entries_info = [
             ("deploy", "webapp", "success"),
             ("deploy", "api", "success"),

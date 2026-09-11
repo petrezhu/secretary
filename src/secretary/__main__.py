@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import os
 import signal
@@ -59,7 +60,9 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     check_p.add_argument(
-        "--json", action="store_true", dest="json_output",
+        "--json",
+        action="store_true",
+        dest="json_output",
         help="Output results as JSON array",
     )
     check_p.add_argument("--config", default=None, help="Config file path")
@@ -75,7 +78,8 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     start_p.add_argument(
-        "--daemon", action="store_true",
+        "--daemon",
+        action="store_true",
         help="Fork to background and write PID file",
     )
     start_p.add_argument("--config", default=None, help="Config file path")
@@ -164,10 +168,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         ok_count = statuses.count("ok")
         warn_count = statuses.count("warning")
         crit_count = statuses.count("critical")
-        print(
-            f"  Summary: {ok_count} ok, {warn_count} warning, "
-            f"{crit_count} critical → {worst}"
-        )
+        print(f"  Summary: {ok_count} ok, {warn_count} warning, {crit_count} critical → {worst}")
 
     worst = _worst_status([r.status for r in results])
     return _EXIT_CODES.get(worst, 2)
@@ -199,10 +200,8 @@ def _is_process_alive(pid: int) -> bool:
 
 def _cleanup_pid() -> None:
     """Remove the PID file if it exists."""
-    try:
+    with contextlib.suppress(OSError):
         PID_FILE.unlink(missing_ok=True)
-    except OSError:
-        pass
 
 
 def cmd_start(args: argparse.Namespace) -> int:
@@ -280,6 +279,7 @@ def _start_daemonized(config) -> int:
         asyncio.run(daemon.start())
     except Exception:
         import traceback
+
         traceback.print_exc()
     finally:
         _cleanup_pid()
@@ -347,6 +347,7 @@ def cmd_status(_args: argparse.Namespace) -> int:
 def main() -> int:
     """CLI entry point."""
     import logging
+
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",

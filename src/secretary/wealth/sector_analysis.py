@@ -27,13 +27,32 @@ _CONFIG_DIR = Path(__file__).parent.parent.parent.parent / "config"
 
 SECTOR_RULES: dict[str, dict[str, Any]] = {
     "银行证券": {
-        "codes": ["sh601398", "sh601288", "sh601988", "sh601328", "sh600036",
-                  "sh601688", "sh601211", "sh600030", "sz000776"],
-        "keywords": ["银行", "工商", "农业", "建设", "中国银行", "招商",
-                     "证券", "国泰君安", "中信证券", "华泰"],
-        "index": "sh000134",       # 中证银行 (显示用)
+        "codes": [
+            "sh601398",
+            "sh601288",
+            "sh601988",
+            "sh601328",
+            "sh600036",
+            "sh601688",
+            "sh601211",
+            "sh600030",
+            "sz000776",
+        ],
+        "keywords": [
+            "银行",
+            "工商",
+            "农业",
+            "建设",
+            "中国银行",
+            "招商",
+            "证券",
+            "国泰君安",
+            "中信证券",
+            "华泰",
+        ],
+        "index": "sh000134",  # 中证银行 (显示用)
         "index_name": "中证银行",
-        "etf_52w": "sh512800",     # 银行ETF (52周数据源)
+        "etf_52w": "sh512800",  # 银行ETF (52周数据源)
         "bull_beta": 0.5,
         "bear_beta": 0.3,
         "description": "高股息防守板块，牛市滞涨但熊市抗跌",
@@ -43,7 +62,7 @@ SECTOR_RULES: dict[str, dict[str, Any]] = {
         "keywords": ["沪深300", "中证500", "上证50", "创业板"],
         "index": "sh000300",
         "index_name": "沪深300",
-        "etf_52w": "sh510300",     # 沪深300ETF
+        "etf_52w": "sh510300",  # 沪深300ETF
         "bull_beta": 1.0,
         "bear_beta": 1.0,
         "description": "大盘宽基，β≈1，市场风向标",
@@ -51,7 +70,7 @@ SECTOR_RULES: dict[str, dict[str, Any]] = {
     "港股宽基": {
         "codes": ["sz159185", "sh513050", "sh513180", "sh513060"],
         "keywords": ["港股", "恒生", "HK", "中概"],
-        "index": "sh513050",       # 中概互联网ETF (代替恒生指数)
+        "index": "sh513050",  # 中概互联网ETF (代替恒生指数)
         "index_name": "港股宽基",
         "etf_52w": "sh513050",
         "bull_beta": 1.2,
@@ -63,18 +82,25 @@ SECTOR_RULES: dict[str, dict[str, Any]] = {
         "keywords": ["茅台", "五粮液", "泸州", "医药", "消费"],
         "index": "sh000932",
         "index_name": "中证消费",
-        "etf_52w": "sh510150",     # 消费ETF
+        "etf_52w": "sh510150",  # 消费ETF
         "bull_beta": 0.8,
         "bear_beta": 0.6,
         "description": "内需消费+医药，中等β，分红防御属性",
     },
     "科技成长": {
-        "codes": ["sz002273", "sz300793", "sz300442", "sz300058",
-                  "sh588000", "sh588050", "sh589850"],
+        "codes": [
+            "sz002273",
+            "sz300793",
+            "sz300442",
+            "sz300058",
+            "sh588000",
+            "sh588050",
+            "sh589850",
+        ],
         "keywords": ["蓝色光标", "科技", "AI", "科创"],
         "index": "sz399006",
         "index_name": "创业板指",
-        "etf_52w": "sz159915",     # 创业板ETF
+        "etf_52w": "sz159915",  # 创业板ETF
         "bull_beta": 1.8,
         "bear_beta": 1.5,
         "description": "高β进攻板块，牛市弹性大但熊市回撤深",
@@ -84,7 +110,7 @@ SECTOR_RULES: dict[str, dict[str, Any]] = {
         "keywords": ["纳指", "纳斯达克", "NDX", "QQQ"],
         "index": "us.NDX",
         "index_name": "纳斯达克100",
-        "etf_52w": "us.NDX",       # 直接用指数
+        "etf_52w": "us.NDX",  # 直接用指数
         "bull_beta": 1.5,
         "bear_beta": 1.2,
         "description": "美股科技，受美联储政策/汇率影响",
@@ -94,7 +120,7 @@ SECTOR_RULES: dict[str, dict[str, Any]] = {
         "keywords": ["神华", "中石化", "中石油", "煤炭", "能源"],
         "index": "sh000001",
         "index_name": "上证指数",
-        "etf_52w": "sh510300",     # 用沪深300ETF近似
+        "etf_52w": "sh510300",  # 用沪深300ETF近似
         "bull_beta": 0.9,
         "bear_beta": 0.8,
         "description": "周期/资源股，受大宗商品和经济周期驱动",
@@ -196,6 +222,7 @@ def classify_all(holdings: list[dict]) -> dict[str, list[dict]]:
 
 # ── 指数行情获取 ─────────────────────────────────────────────────────────────
 
+
 def fetch_index_quotes(index_codes: list[str]) -> dict[str, dict]:
     """批量获取指数行情（腾讯接口）。
 
@@ -240,15 +267,17 @@ def fetch_index_quotes(index_codes: list[str]) -> dict[str, dict]:
 
 # ── 板块位置计算 ─────────────────────────────────────────────────────────────
 
+
 @dataclass
 class SectorPosition:
     """板块在牛市/熊市坐标系中的位置。"""
+
     sector: str
     description: str
     index_name: str
     index_price: float = 0.0
     index_change_pct: float = 0.0
-    position_in_52w: float = 0.0    # 0=52w低, 1=52w高
+    position_in_52w: float = 0.0  # 0=52w低, 1=52w高
     bull_beta: float = 1.0
     bear_beta: float = 1.0
     # 持仓汇总
@@ -258,17 +287,17 @@ class SectorPosition:
     total_pnl_pct: float = 0.0
     holding_count: int = 0
     # 建议
-    market_phase: str = ""      # "bull" / "bear" / "neutral"
-    recommendation: str = ""    # "overweight" / "equal" / "underweight"
+    market_phase: str = ""  # "bull" / "bear" / "neutral"
+    recommendation: str = ""  # "overweight" / "equal" / "underweight"
     reasoning: str = ""
 
 
 def assess_market_phase(position_in_52w: float) -> str:
     """判断市场阶段。"""
     if position_in_52w >= 0.75:
-        return "bull"    # 牛市高位
+        return "bull"  # 牛市高位
     elif position_in_52w <= 0.25:
-        return "bear"    # 熊市低位
+        return "bear"  # 熊市低位
     else:
         return "neutral"  # 震荡中性
 
@@ -308,8 +337,7 @@ def compute_sector_recommendation(
                 return "equal", f"熊市低位但已亏损{pnl_pct:.0f}%，不加仓，等待企稳信号"
             else:
                 return "overweight", (
-                    f"熊市低位(pos={position_in_52w:.0%})，"
-                    f"{sector}弹性大，可逢低布局"
+                    f"熊市低位(pos={position_in_52w:.0%})，{sector}弹性大，可逢低布局"
                 )
         elif bear_beta <= 0.3 or bear_beta < 0:
             return "underweight", f"熊市低位，{sector}防守属性强但弹性不足，减配转攻"
@@ -328,9 +356,10 @@ def compute_sector_recommendation(
 
 # ── 主入口 ───────────────────────────────────────────────────────────────────
 
+
 def analyze_sector_positions(portfolio_path: str) -> list[SectorPosition]:
     """分析所有持仓的板块位置和建议。"""
-    with open(portfolio_path, 'r', encoding='utf-8') as f:
+    with open(portfolio_path, encoding="utf-8") as f:
         portfolio = json.load(f)
 
     holdings = portfolio.get("holdings", [])
@@ -397,24 +426,26 @@ def analyze_sector_positions(portfolio_path: str) -> list[SectorPosition]:
             sector, position, rule["bull_beta"], rule["bear_beta"], total_pnl_pct
         )
 
-        results.append(SectorPosition(
-            sector=sector,
-            description=rule["description"],
-            index_name=rule["index_name"],
-            index_price=quote.get("price", 0),
-            index_change_pct=quote.get("change_pct", 0.0),
-            position_in_52w=position,
-            bull_beta=rule["bull_beta"],
-            bear_beta=rule["bear_beta"],
-            total_cost=round(total_cost, 2),
-            total_value=round(total_value, 2),
-            total_pnl=round(total_pnl, 2),
-            total_pnl_pct=round(total_pnl_pct, 2),
-            holding_count=len(sector_holdings),
-            market_phase=assess_market_phase(position),
-            recommendation=rec,
-            reasoning=reasoning,
-        ))
+        results.append(
+            SectorPosition(
+                sector=sector,
+                description=rule["description"],
+                index_name=rule["index_name"],
+                index_price=quote.get("price", 0),
+                index_change_pct=quote.get("change_pct", 0.0),
+                position_in_52w=position,
+                bull_beta=rule["bull_beta"],
+                bear_beta=rule["bear_beta"],
+                total_cost=round(total_cost, 2),
+                total_value=round(total_value, 2),
+                total_pnl=round(total_pnl, 2),
+                total_pnl_pct=round(total_pnl_pct, 2),
+                holding_count=len(sector_holdings),
+                market_phase=assess_market_phase(position),
+                recommendation=rec,
+                reasoning=reasoning,
+            )
+        )
 
     return results
 

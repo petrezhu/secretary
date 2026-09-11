@@ -5,7 +5,8 @@ Usage (from inbound.py):
     from secretary.gateway.intents import build_default_registry
 
     registry = build_default_registry()
-    reply, intent, confidence = await registry.dispatch(IntentContext(text=..., repo=..., config=...))
+    ctx = IntentContext(text=..., repo=..., config=...)
+    reply, intent, confidence = await registry.dispatch(ctx)
 """
 
 from __future__ import annotations

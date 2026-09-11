@@ -116,7 +116,9 @@ async def fetch_etf_flows(session: aiohttp.ClientSession | None = None) -> dict[
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             "Referer": "https://data.eastmoney.com/",
         }
-        async with session.get(ETF_FLOW_URL, headers=headers, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+        async with session.get(
+            ETF_FLOW_URL, headers=headers, timeout=aiohttp.ClientTimeout(total=15)
+        ) as resp:
             data = await resp.json(content_type=None)
 
         flows: dict[str, float] = {}

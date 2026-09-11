@@ -80,11 +80,13 @@ def set_config(config) -> None:
 
 class InboundRequest(BaseModel):
     """Message from Hermes plugin."""
+
     text: str = Field(..., min_length=1)
     user_id: str = "unknown"
     chat_id: str = "unknown"
     chat_type: str = "dm"
     platform: str = "qqbot"
+
 
 class InboundResponse(BaseModel):
     """Decision for Hermes."""
@@ -122,6 +124,7 @@ async def handle_inbound(req: InboundRequest) -> InboundResponse:
 
         # Split long replies into multiple messages
         from secretary.gateway.intents.base import split_reply
+
         chunks = split_reply(reply)
 
         if len(chunks) == 1:
@@ -137,9 +140,8 @@ async def handle_inbound(req: InboundRequest) -> InboundResponse:
 
         # Schedule async补答复
         import asyncio
-        asyncio.create_task(
-            _async_supplement(text, intent_name, req.chat_id)
-        )
+
+        asyncio.create_task(_async_supplement(text, intent_name, req.chat_id))
 
         return InboundResponse(action="handle", reply=preliminary)
 
@@ -149,6 +151,7 @@ async def handle_inbound(req: InboundRequest) -> InboundResponse:
 
 
 # ── Async supplement via Harness ─────────────────────────────────────────────
+
 
 async def _async_supplement(text: str, intent_name: str, chat_id: str) -> None:
     """Background task: call Harness to get a real answer and send it.
@@ -179,8 +182,9 @@ async def _async_supplement(text: str, intent_name: str, chat_id: str) -> None:
             )
             return
 
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
+        async with (
+            aiohttp.ClientSession() as session,
+            session.post(
                 f"{api_base}/chat/completions",
                 json={
                     "model": "deepseek-v4-flash",
@@ -190,31 +194,32 @@ async def _async_supplement(text: str, intent_name: str, chat_id: str) -> None:
                 },
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=aiohttp.ClientTimeout(total=30),
-            ) as resp:
-                if resp.status == 200:
-                    data = await resp.json()
-                    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                    if answer:
-                        # Send via Secretary's own /api/send
-                        async with session.post(
-                            "http://127.0.0.1:8901/api/send",
-                            json={"text": answer, "channel": "qq", "target": chat_id},
-                            timeout=aiohttp.ClientTimeout(total=10),
-                        ) as send_resp:
-                            if send_resp.status == 200:
-                                logger.info(
-                                    "[Harness] Async supplement sent for %s",
-                                    intent_name,
-                                )
-                            else:
-                                logger.warning(
-                                    "[Harness] Failed to send supplement: %d",
-                                    send_resp.status,
-                                )
-                    else:
-                        logger.warning("[Harness] Empty response from CLIProxyAPI")
+            ) as resp,
+        ):
+            if resp.status == 200:
+                data = await resp.json()
+                answer = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if answer:
+                    # Send via Secretary's own /api/send
+                    async with session.post(
+                        "http://127.0.0.1:8901/api/send",
+                        json={"text": answer, "channel": "qq", "target": chat_id},
+                        timeout=aiohttp.ClientTimeout(total=10),
+                    ) as send_resp:
+                        if send_resp.status == 200:
+                            logger.info(
+                                "[Harness] Async supplement sent for %s",
+                                intent_name,
+                            )
+                        else:
+                            logger.warning(
+                                "[Harness] Failed to send supplement: %d",
+                                send_resp.status,
+                            )
                 else:
-                    logger.warning("[Harness] CLIProxyAPI returned %d", resp.status)
+                    logger.warning("[Harness] Empty response from CLIProxyAPI")
+            else:
+                logger.warning("[Harness] CLIProxyAPI returned %d", resp.status)
 
     except Exception as e:
         logger.warning("[Harness] Async supplement failed for %s: %s", intent_name, str(e)[:100])

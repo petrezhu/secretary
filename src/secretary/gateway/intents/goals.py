@@ -6,8 +6,15 @@ from secretary.coach.focus import select_today_focus
 from secretary.gateway.intents.base import IntentContext
 
 _FOCUS_KW = {
-    "今天干什么", "今天做什么", "今天忙什么", "今日焦点", "焦点",
-    "先做哪个", "下一步", "重点是啥", "重点",
+    "今天干什么",
+    "今天做什么",
+    "今天忙什么",
+    "今日焦点",
+    "焦点",
+    "先做哪个",
+    "下一步",
+    "重点是啥",
+    "重点",
 }
 
 _LONGTERM_KW = {"长期目标", "年度目标", "人生目标", "目标进度"}

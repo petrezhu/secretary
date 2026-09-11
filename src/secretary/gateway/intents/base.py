@@ -150,9 +150,8 @@ class IntentRegistry:
                 if kw:
                     if not _exact_keywords(text, kw):
                         continue
-                elif has_patterns:
-                    if not _matches(handler.patterns, text):
-                        continue
+                elif has_patterns and not _matches(handler.patterns, text):
+                    continue
                 # else: fallback — always try
 
                 reply = await handler.handle(ctx)
@@ -163,7 +162,5 @@ class IntentRegistry:
                     return None, handler.name, "medium"
                 result = None
             except Exception as exc:
-                logger.warning(
-                    "Intent '%s' failed for %r: %s", handler.name, text[:40], exc
-                )
+                logger.warning("Intent '%s' failed for %r: %s", handler.name, text[:40], exc)
         return result, None, "low"

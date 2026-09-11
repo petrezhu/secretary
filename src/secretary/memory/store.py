@@ -20,22 +20,25 @@ logger = logging.getLogger(__name__)
 
 class MemoryType(Enum):
     """Type of memory entry."""
-    DECISION = "decision"      # User made a decision
-    INTENT = "intent"          # User expressed an intent (pending action)
-    FACT = "fact"              # A fact about the user or their systems
+
+    DECISION = "decision"  # User made a decision
+    INTENT = "intent"  # User expressed an intent (pending action)
+    FACT = "fact"  # A fact about the user or their systems
     PREFERENCE = "preference"  # User preference
 
 
 class MemoryStatus(Enum):
     """Status of memory entry."""
-    ACTIVE = "active"          # Still relevant
-    RESOLVED = "resolved"      # Fulfilled/completed
-    EXPIRED = "expired"        # No longer relevant
+
+    ACTIVE = "active"  # Still relevant
+    RESOLVED = "resolved"  # Fulfilled/completed
+    EXPIRED = "expired"  # No longer relevant
 
 
 @dataclass
 class MemoryEntry:
     """A single memory entry."""
+
     id: str
     timestamp: str
     type: str
@@ -102,7 +105,7 @@ class MemoryStore:
             if not self.path.exists():
                 return []
 
-            with open(self.path, "r", encoding="utf-8") as f:
+            with open(self.path, encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -134,8 +137,10 @@ class MemoryStore:
                     if entity:
                         entities = data.get("entities", [])
                         content = data.get("content", "")
-                        if not any(entity.lower() in e.lower() for e in entities) and \
-                           entity.lower() not in content.lower():
+                        if (
+                            not any(entity.lower() in e.lower() for e in entities)
+                            and entity.lower() not in content.lower()
+                        ):
                             continue
 
                     # Tag filter (exact match)
@@ -144,10 +149,15 @@ class MemoryStore:
                         if tag not in tags:
                             continue
 
-                    results.append(MemoryEntry(**{
-                        k: v for k, v in data.items()
-                        if k in MemoryEntry.__dataclass_fields__
-                    }))
+                    results.append(
+                        MemoryEntry(
+                            **{
+                                k: v
+                                for k, v in data.items()
+                                if k in MemoryEntry.__dataclass_fields__
+                            }
+                        )
+                    )
 
                     if len(results) >= limit:
                         break
@@ -164,7 +174,7 @@ class MemoryStore:
             if not self.path.exists():
                 return []
 
-            with open(self.path, "r", encoding="utf-8") as f:
+            with open(self.path, encoding="utf-8") as f:
                 lines = f.readlines()
 
             # Read from end (most recent)
@@ -174,10 +184,15 @@ class MemoryStore:
                     continue
                 try:
                     data = json.loads(line)
-                    results.append(MemoryEntry(**{
-                        k: v for k, v in data.items()
-                        if k in MemoryEntry.__dataclass_fields__
-                    }))
+                    results.append(
+                        MemoryEntry(
+                            **{
+                                k: v
+                                for k, v in data.items()
+                                if k in MemoryEntry.__dataclass_fields__
+                            }
+                        )
+                    )
                     if len(results) >= limit:
                         break
                 except (json.JSONDecodeError, TypeError):
@@ -204,7 +219,7 @@ class MemoryStore:
         lines = []
         updated = False
         try:
-            with open(self.path, "r", encoding="utf-8") as f:
+            with open(self.path, encoding="utf-8") as f:
                 lines = f.readlines()
 
             new_lines = []
@@ -238,7 +253,7 @@ class MemoryStore:
             return 0
         count = 0
         try:
-            with open(self.path, "r", encoding="utf-8") as f:
+            with open(self.path, encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -265,7 +280,7 @@ class MemoryStore:
             return 0
 
         try:
-            with open(self.path, "r", encoding="utf-8") as f:
+            with open(self.path, encoding="utf-8") as f:
                 lines = f.readlines()
 
             entries = []

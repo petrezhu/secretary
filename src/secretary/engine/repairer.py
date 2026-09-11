@@ -48,6 +48,7 @@ class RepairActionType(str, Enum):
     DISK_CLEANUP = "disk_full"
     CRON_RESET = "cron_stuck"
 
+
 # ── Whitelisted auto-repair anomaly types ────────────────────────────────────
 
 AUTO_REPAIR_TYPES: set[RepairActionType] = {
@@ -119,7 +120,9 @@ def _extract_target(result: CheckResult, anomaly_type: RepairActionType) -> str:
         return details.get("service", result.name.replace("_service", "").replace("service_", ""))
 
     if anomaly_type == RepairActionType.DOCKER_RESTART:
-        return details.get("container", result.name.replace("_container", "").replace("container_", ""))
+        return details.get(
+            "container", result.name.replace("_container", "").replace("container_", "")
+        )
 
     if anomaly_type == RepairActionType.DISK_CLEANUP:
         return details.get("path", "/")
@@ -326,7 +329,10 @@ class AutoRepairer:
 
         def _run() -> None:
             # 1. Clean old log files (>7 days)
-            log_dirs = [Path("/var/log"), Path(target).parent if Path(target).is_file() else Path(target)]
+            log_dirs = [
+                Path("/var/log"),
+                Path(target).parent if Path(target).is_file() else Path(target),
+            ]
             skip_prefixes = ("/proc", "/sys", "/dev")
             for log_dir in log_dirs:
                 if not log_dir.exists():
@@ -338,7 +344,11 @@ class AutoRepairer:
                         try:
                             if f.is_symlink():
                                 continue
-                            if f.is_file() and not str(f).startswith(skip_prefixes) and (now - f.stat().st_mtime) > seven_days:
+                            if (
+                                f.is_file()
+                                and not str(f).startswith(skip_prefixes)
+                                and (now - f.stat().st_mtime) > seven_days
+                            ):
                                 f.unlink()
                                 cleaned.append(str(f))
                         except OSError:
@@ -348,7 +358,11 @@ class AutoRepairer:
                         try:
                             if f.is_symlink():
                                 continue
-                            if f.is_file() and not str(f).startswith(skip_prefixes) and (now - f.stat().st_mtime) > seven_days:
+                            if (
+                                f.is_file()
+                                and not str(f).startswith(skip_prefixes)
+                                and (now - f.stat().st_mtime) > seven_days
+                            ):
                                 f.unlink()
                                 cleaned.append(str(f))
                         except OSError:

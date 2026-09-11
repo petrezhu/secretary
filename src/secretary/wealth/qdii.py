@@ -48,7 +48,13 @@ def parse_us_index_quote(raw_text: str, code: str) -> dict[str, Any]:
     Tencent US quote format (fields separated by ~):
       $2=name, $4=price, $5=prev_close, $33=change%, $47=52w_high, $48=52w_low
     """
-    result: dict[str, Any] = {"code": code, "price": 0.0, "change_pct": 0.0, "high_52w": 0.0, "low_52w": 0.0}
+    result: dict[str, Any] = {
+        "code": code,
+        "price": 0.0,
+        "change_pct": 0.0,
+        "high_52w": 0.0,
+        "low_52w": 0.0,
+    }
     for line in raw_text.strip().split("\n"):
         line = line.strip().rstrip(";")
         if "=" not in line:

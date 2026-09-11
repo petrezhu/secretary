@@ -52,11 +52,12 @@ class WealthJobs:
                 self._last_nt_score = data.get("last_nt_score")
                 # Convert lists back to sets
                 seen = data.get("seen_announcement_urls", {})
-                self._seen_announcement_urls = {
-                    k: set(v) for k, v in seen.items()
-                }
-                logger.info("Loaded wealth state: nt_score=%s, %d stock URLs",
-                          self._last_nt_score, len(self._seen_announcement_urls))
+                self._seen_announcement_urls = {k: set(v) for k, v in seen.items()}
+                logger.info(
+                    "Loaded wealth state: nt_score=%s, %d stock URLs",
+                    self._last_nt_score,
+                    len(self._seen_announcement_urls),
+                )
         except Exception as e:
             logger.warning("Failed to load wealth state: %s", e)
 
@@ -194,7 +195,9 @@ class WealthJobs:
                     channel="qq",
                 )
             )
-            logger.info("National team score changed: %.1f -> %.1f", self._last_nt_score, result.score)
+            logger.info(
+                "National team score changed: %.1f -> %.1f", self._last_nt_score, result.score
+            )
 
         self._last_nt_score = result.score
         self._save_state()  # Persist state
@@ -296,7 +299,9 @@ class WealthJobs:
             return
 
         report = format_sync_report(result)
-        logger.info("Eastmoney sync: %d holdings, %d trades", len(result.holdings), len(result.trades))
+        logger.info(
+            "Eastmoney sync: %d holdings, %d trades", len(result.holdings), len(result.trades)
+        )
 
         # Notify on successful sync (only if there are changes)
         if result.holdings:

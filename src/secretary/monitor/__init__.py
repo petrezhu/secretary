@@ -27,6 +27,7 @@ class CheckResult:
 
 class Checker(Protocol):
     """Protocol for all checkers."""
+
     name: str
 
     async def check(self, repo: Any) -> CheckResult: ...
@@ -49,9 +50,11 @@ class CheckerRegistry:
                 result = await checker.check(repo)
                 results.append(result)
             except Exception as e:
-                results.append(CheckResult(
-                    name=checker.name,
-                    status="critical",
-                    message=f"Checker failed: {e}",
-                ))
+                results.append(
+                    CheckResult(
+                        name=checker.name,
+                        status="critical",
+                        message=f"Checker failed: {e}",
+                    )
+                )
         return results

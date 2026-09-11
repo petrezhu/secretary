@@ -256,7 +256,8 @@ def load_portfolio_data(path: str | Path) -> PortfolioData:
     """Load full portfolio data from a JSON file.
 
     Supports two formats:
-    1. New format: {"holdings": [...], "cash": {...}, "closed_positions": [...], "pending_actions": [...]}
+    1. New format: {"holdings": [...], "cash": {...}, "closed_positions": [...],
+        "pending_actions": [...]}
     2. Legacy format: [{holding}, ...] → wraps into PortfolioData with empty cash/closed/pending
     """
     portfolio_path = Path(path)
@@ -277,17 +278,17 @@ def load_portfolio_data(path: str | Path) -> PortfolioData:
         holdings = [_parse_holding(h) for h in data.get("holdings", [])]
 
         raw_cash = data.get("cash", {})
-        cash = Cash(
-            total=float(raw_cash.get("total", 0)),
-            note=raw_cash.get("note", ""),
-        ) if isinstance(raw_cash, dict) else Cash()
+        cash = (
+            Cash(
+                total=float(raw_cash.get("total", 0)),
+                note=raw_cash.get("note", ""),
+            )
+            if isinstance(raw_cash, dict)
+            else Cash()
+        )
 
-        closed_positions = [
-            _parse_closed_position(cp) for cp in data.get("closed_positions", [])
-        ]
-        pending_actions = [
-            _parse_pending_action(pa) for pa in data.get("pending_actions", [])
-        ]
+        closed_positions = [_parse_closed_position(cp) for cp in data.get("closed_positions", [])]
+        pending_actions = [_parse_pending_action(pa) for pa in data.get("pending_actions", [])]
 
         return PortfolioData(
             holdings=holdings,
@@ -307,7 +308,8 @@ def get_all_stock_codes(portfolio_data: PortfolioData) -> list[str]:
     Also skips holdings with 0 shares (fully sold).
     """
     return [
-        h.code for h in portfolio_data.holdings
+        h.code
+        for h in portfolio_data.holdings
         if h.type in ("stock", "etf") and h.shares > 0 and h.code
     ]
 
@@ -438,7 +440,9 @@ def _compute_holding(
         nav_date=raw.get("nav_date", ""),
         pending_redemption=pending_redemption,
         grams=_safe_float(raw.get("grams", 0)),
-        cost_total=_safe_float(raw.get("cost_total", 0)) if raw.get("cost_total") is not None else 0.0,
+        cost_total=_safe_float(raw.get("cost_total", 0))
+        if raw.get("cost_total") is not None
+        else 0.0,
         cost_per_gram=_safe_float(raw.get("cost_per_gram", 0)),
     )
 
@@ -549,7 +553,9 @@ def compute_portfolio_from_data(
                 "shares": h.pending_redemption.shares,
                 "confirm_date": h.pending_redemption.confirm_date,
                 "status": h.pending_redemption.status,
-            } if h.pending_redemption else None,
+            }
+            if h.pending_redemption
+            else None,
         }
         for h in portfolio_data.holdings
     ]
@@ -615,8 +621,7 @@ def format_portfolio_report(snapshot: PortfolioSnapshot) -> str:
         for h in stock_holdings:
             emoji = "🟢" if h.pnl >= 0 else "🔴"
             lines.append(
-                f"  {emoji} {h.name}: ¥{h.current_price:.2f} "
-                f"盈亏 ¥{h.pnl:,.2f} ({h.pnl_pct:+.2f}%)"
+                f"  {emoji} {h.name}: ¥{h.current_price:.2f} 盈亏 ¥{h.pnl:,.2f} ({h.pnl_pct:+.2f}%)"
             )
 
     if fund_holdings:
@@ -624,10 +629,7 @@ def format_portfolio_report(snapshot: PortfolioSnapshot) -> str:
         for h in fund_holdings:
             emoji = "🟢" if h.pnl >= 0 else "🔴"
             nav_str = f"净值 ¥{h.nav:.4f}" if h.nav > 0 else "净值待更新"
-            lines.append(
-                f"  {emoji} {h.name}: {nav_str} "
-                f"市值 ¥{h.market_value:,.2f}"
-            )
+            lines.append(f"  {emoji} {h.name}: {nav_str} 市值 ¥{h.market_value:,.2f}")
             if h.pending_redemption and h.pending_redemption.status == "pending":
                 lines.append(
                     f"    ⏳ 赎回中: {h.pending_redemption.shares:.0f}份 "
@@ -723,9 +725,7 @@ def compute_weighted_avg_cost(
     return (round(total_shares, 4), round(avg_cost, 4))
 
 
-def compute_cash_impact(
-    action: str, amount: float, current_cash: float
-) -> float:
+def compute_cash_impact(action: str, amount: float, current_cash: float) -> float:
     """Compute new cash balance after a trade.
 
     Args:
@@ -744,9 +744,7 @@ def compute_cash_impact(
         raise ValueError(f"Unknown action: {action!r}, expected 'buy' or 'sell'")
 
 
-def compute_realized_pnl(
-    shares: float, sell_price: float, avg_cost: float
-) -> float:
+def compute_realized_pnl(shares: float, sell_price: float, avg_cost: float) -> float:
     """Compute realized P&L for a sell trade."""
     return round(shares * (sell_price - avg_cost), 2)
 
@@ -803,20 +801,14 @@ def validate_and_record_trade(
     if action == "buy":
         # 2. Cash check
         if amount > current_cash:
-            warnings.append(
-                f"买入金额 ¥{amount:,.2f} 超过可用资金 ¥{current_cash:,.2f}"
-            )
+            warnings.append(f"买入金额 ¥{amount:,.2f} 超过可用资金 ¥{current_cash:,.2f}")
         # 3. Weighted avg cost
         existing_shares = holding.get("shares", 0) if holding else 0
         existing_cost = holding.get("cost_price", 0) if holding else 0
-        _, new_avg_cost = compute_weighted_avg_cost(
-            existing_shares, existing_cost, shares, price
-        )
+        _, new_avg_cost = compute_weighted_avg_cost(existing_shares, existing_cost, shares, price)
     elif action == "sell":
         if holding and shares > holding.get("shares", 0):
-            warnings.append(
-                f"卖出 {shares} 股超过持有 {holding['shares']} 股"
-            )
+            warnings.append(f"卖出 {shares} 股超过持有 {holding['shares']} 股")
         avg_cost = holding.get("cost_price", 0) if holding else price
         realized_pnl = compute_realized_pnl(shares, price, avg_cost)
     else:

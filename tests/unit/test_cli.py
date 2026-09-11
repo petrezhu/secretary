@@ -345,8 +345,10 @@ class TestMain:
     def test_main_check_subcommand(self, capsys):
         """`secretary check` should dispatch to cmd_check."""
         results = [_make_check_result("test", "ok", "fine")]
-        with patch("sys.argv", ["secretary", "check"]), \
-             patch("secretary.__main__.SecretaryDaemon") as MockDaemon:
+        with (
+            patch("sys.argv", ["secretary", "check"]),
+            patch("secretary.__main__.SecretaryDaemon") as MockDaemon,
+        ):
             mock_instance = MagicMock()
             mock_instance.run_checks = AsyncMock(return_value=results)
             MockDaemon.return_value = mock_instance
@@ -356,8 +358,10 @@ class TestMain:
 
     def test_main_status_subcommand(self, capsys):
         """`secretary status` should dispatch to cmd_status."""
-        with patch("sys.argv", ["secretary", "status"]), \
-             patch("secretary.__main__.PID_FILE", Path("/tmp/__nonexistent_test.pid")):
+        with (
+            patch("sys.argv", ["secretary", "status"]),
+            patch("secretary.__main__.PID_FILE", Path("/tmp/__nonexistent_test.pid")),
+        ):
             exit_code = main()
 
         captured = capsys.readouterr()

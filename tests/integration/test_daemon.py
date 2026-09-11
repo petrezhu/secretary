@@ -187,9 +187,7 @@ class TestSchedulerTick:
                 raise RuntimeError(f"Fail #{attempt_count}")
 
         scheduler = Scheduler(**components)
-        scheduler.add_job(
-            Job(name="flaky", action=flaky_action, interval_seconds=0, max_retries=3)
-        )
+        scheduler.add_job(Job(name="flaky", action=flaky_action, interval_seconds=0, max_retries=3))
 
         result = await scheduler.tick()
         assert result.jobs_executed == 1
@@ -198,13 +196,12 @@ class TestSchedulerTick:
 
     async def test_tick_records_failure_after_max_retries(self, components):
         """Job should be marked failed after exhausting retries."""
+
         async def always_fail():
             raise RuntimeError("permanent failure")
 
         scheduler = Scheduler(**components)
-        scheduler.add_job(
-            Job(name="doomed", action=always_fail, interval_seconds=0, max_retries=2)
-        )
+        scheduler.add_job(Job(name="doomed", action=always_fail, interval_seconds=0, max_retries=2))
 
         result = await scheduler.tick()
         assert result.jobs_executed == 0
@@ -268,9 +265,7 @@ class TestSchedulerTick:
         async def bad_action():
             raise RuntimeError("boom")
 
-        scheduler.add_job(
-            Job(name="bad_job", action=bad_action, interval_seconds=0, max_retries=1)
-        )
+        scheduler.add_job(Job(name="bad_job", action=bad_action, interval_seconds=0, max_retries=1))
         await scheduler.tick()
 
         entries = components["audit"].query(action="job:bad_job")
@@ -285,9 +280,7 @@ class TestSchedulerTick:
         async def noop():
             pass
 
-        scheduler.add_job(
-            Job(name="blocked", action=noop, interval_seconds=0, resource_check=True)
-        )
+        scheduler.add_job(Job(name="blocked", action=noop, interval_seconds=0, resource_check=True))
         await scheduler.tick()
 
         entries = components["audit"].query(action="job:blocked")
@@ -337,9 +330,7 @@ class TestSchedulerTick:
             # Second call succeeds
 
         scheduler = Scheduler(**components)
-        scheduler.add_job(
-            Job(name="mixed", action=mixed_action, interval_seconds=0, max_retries=2)
-        )
+        scheduler.add_job(Job(name="mixed", action=mixed_action, interval_seconds=0, max_retries=2))
 
         result = await scheduler.tick()
         assert result.jobs_executed == 1
@@ -444,9 +435,9 @@ class TestSchedulerPipeline:
     async def test_pipeline_audit_records_details(self, pipeline_components):
         """Pipeline audit should include check details."""
         pipeline_components["checkers"].register(
-            MockChecker("detail_check", CheckResult(
-                name="detail_check", status="ok", message="All clear"
-            ))
+            MockChecker(
+                "detail_check", CheckResult(name="detail_check", status="ok", message="All clear")
+            )
         )
 
         scheduler = Scheduler(**pipeline_components)
@@ -539,9 +530,10 @@ class TestSecretaryDaemon:
             mock_repo.close = AsyncMock()
             MockRepo.return_value = mock_repo
 
-            with patch("secretary.daemon.HealthChecker") as MockHC, \
-                 patch("secretary.daemon.DeadmanChecker") as MockDC:
-
+            with (
+                patch("secretary.daemon.HealthChecker") as MockHC,
+                patch("secretary.daemon.DeadmanChecker") as MockDC,
+            ):
                 # Make checkers return ok
                 mock_hc = MagicMock()
                 mock_hc.name = "health"
@@ -569,8 +561,6 @@ class TestSecretaryDaemon:
         daemon = SecretaryDaemon(make_config(tick_interval=1))
         daemon.running = True
         daemon.resource_guard = MockResourceGuard(resources_ok=True)
-
-        tick_results = []
 
         mock_scheduler = AsyncMock()
         mock_scheduler.tick = AsyncMock(return_value=TickResult())
@@ -671,9 +661,7 @@ class TestSchedulerTickIntegration:
             raise RuntimeError("intentional failure")
 
         scheduler.add_job(Job(name="good", action=good_job, interval_seconds=0))
-        scheduler.add_job(
-            Job(name="bad", action=bad_job, interval_seconds=0, max_retries=1)
-        )
+        scheduler.add_job(Job(name="bad", action=bad_job, interval_seconds=0, max_retries=1))
 
         result = await scheduler.tick()
 
@@ -712,9 +700,7 @@ class TestSchedulerTickIntegration:
             run_count += 1
 
         # 0-second interval = runs every tick
-        scheduler.add_job(
-            Job(name="every_tick", action=counting_job, interval_seconds=0)
-        )
+        scheduler.add_job(Job(name="every_tick", action=counting_job, interval_seconds=0))
 
         await scheduler.tick()
         await scheduler.tick()
@@ -854,11 +840,12 @@ class TestDaemonE2E:
         Patches Repository to avoid real DB connections; lets the daemon
         run its natural start → main_loop → stop lifecycle.
         """
-        with patch("secretary.daemon.Repository") as MockRepo, \
-             patch("secretary.daemon.HealthChecker") as MockHC, \
-             patch("secretary.daemon.DeadmanChecker") as MockDC, \
-             patch("secretary.daemon.Dispatcher") as MockDisp:
-
+        with (
+            patch("secretary.daemon.Repository") as MockRepo,
+            patch("secretary.daemon.HealthChecker") as MockHC,
+            patch("secretary.daemon.DeadmanChecker") as MockDC,
+            patch("secretary.daemon.Dispatcher") as MockDisp,
+        ):
             mock_repo = AsyncMock()
             mock_repo.initialize = AsyncMock()
             mock_repo.close = AsyncMock()
@@ -944,6 +931,7 @@ class TestDaemonE2E:
         async def send_sigterm():
             await asyncio.sleep(1.5)
             import os
+
             os.kill(os.getpid(), signal.SIGTERM)
 
         sigterm_task = asyncio.create_task(send_sigterm())
@@ -994,7 +982,6 @@ class TestDaemonE2E:
         daemon.resource_guard = mock_resource_guard
 
         tick_calls = 0
-        original_check = mock_resource_guard.check_resources
 
         async def transitioning_guard():
             """Resources are low for first 2 checks, then recover."""
@@ -1054,7 +1041,6 @@ class TestDaemonE2E:
                 sleep_durations.append(seconds)
 
             with patch("asyncio.sleep", side_effect=fake_sleep):
-
                 # 3 backoff rounds
                 for _ in range(3):
                     ok = await guard.check_resources()
@@ -1185,12 +1171,8 @@ class TestDaemonE2E:
         dispatcher = MockDispatcher()
         checkers = CheckerRegistry()
 
-        checkers.register(
-            MockChecker("ok1", CheckResult(name="ok1", status="ok", message="正常"))
-        )
-        checkers.register(
-            MockChecker("ok2", CheckResult(name="ok2", status="ok", message="正常"))
-        )
+        checkers.register(MockChecker("ok1", CheckResult(name="ok1", status="ok", message="正常")))
+        checkers.register(MockChecker("ok2", CheckResult(name="ok2", status="ok", message="正常")))
 
         scheduler = Scheduler(
             config=daemon_config,
@@ -1224,11 +1206,12 @@ class TestDaemonE2E:
 
         start_time = time.monotonic()
 
-        with patch("secretary.daemon.Repository") as MockRepo, \
-             patch("secretary.daemon.HealthChecker") as MockHC, \
-             patch("secretary.daemon.DeadmanChecker") as MockDC, \
-             patch("secretary.daemon.Dispatcher") as MockDisp:
-
+        with (
+            patch("secretary.daemon.Repository") as MockRepo,
+            patch("secretary.daemon.HealthChecker") as MockHC,
+            patch("secretary.daemon.DeadmanChecker") as MockDC,
+            patch("secretary.daemon.Dispatcher") as MockDisp,
+        ):
             mock_repo = AsyncMock()
             mock_repo.initialize = AsyncMock()
             mock_repo.close = AsyncMock()

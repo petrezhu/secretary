@@ -58,19 +58,16 @@ async def collect_evening_data(repo: Repository) -> EveningContext:
     wealth_summary = ""
     try:
         from secretary.wealth.portfolio import get_portfolio_snapshot
+
         _portfolio_env = os.environ.get("SECRETARY_PORTFOLIO_PATH", "").strip()
-        if _portfolio_env:
-            portfolio_path = Path(_portfolio_env)
-        else:
-            portfolio_path = None
+        portfolio_path = Path(_portfolio_env) if _portfolio_env else None
         if portfolio_path and portfolio_path.is_file():
             snapshot = await get_portfolio_snapshot(portfolio_path)
             if snapshot.holdings:
                 total_pnl = snapshot.total_pnl_pct
                 emoji = "📈" if total_pnl >= 0 else "📉"
                 wealth_summary = (
-                    f"{emoji} 持仓 {len(snapshot.holdings)} 只，"
-                    f"总盈亏 {total_pnl:+.1f}%"
+                    f"{emoji} 持仓 {len(snapshot.holdings)} 只，总盈亏 {total_pnl:+.1f}%"
                 )
     except Exception as e:
         logger.debug("Failed to get wealth summary: %s", e)

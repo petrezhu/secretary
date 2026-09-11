@@ -175,7 +175,9 @@ class TestTencentPriceParser:
     """Test Tencent quote API response parsing."""
 
     def test_parse_single_quote(self):
-        raw = 'v_sh600519="1~贵州茅台~600519~1800.50~10.5~1805.00~100000~50000~50000~1800.00~9999~";'
+        raw = (
+            'v_sh600519="1~贵州茅台~600519~1800.50~10.5~1805.00~100000~50000~50000~1800.00~9999~";'
+        )
         prices = parse_tencent_prices(raw)
         assert prices["sh600519"] == 1800.50
 
@@ -271,7 +273,14 @@ class TestPortfolioCompute:
     def test_fund_otc_uses_nav(self):
         """OTC fund should use NAV instead of real-time price."""
         holdings = [
-            {"code": "f_999999", "name": "测试基金A", "shares": 1000, "type": "fund_otc", "nav": 2.5, "cost_price": 2.0},
+            {
+                "code": "f_999999",
+                "name": "测试基金A",
+                "shares": 1000,
+                "type": "fund_otc",
+                "nav": 2.5,
+                "cost_price": 2.0,
+            },
         ]
         snap = compute_portfolio(holdings, prices={})
         assert snap.holdings[0].market_value == pytest.approx(1000 * 2.5, abs=0.01)
@@ -280,7 +289,14 @@ class TestPortfolioCompute:
     def test_gold_accumulate_uses_grams(self):
         """Gold accumulate should use grams * cost_per_gram."""
         holdings = [
-            {"code": "test_gold", "name": "测试黄金", "type": "gold_accumulate", "grams": 10, "cost_total": 5000.0, "cost_per_gram": 500.0},
+            {
+                "code": "test_gold",
+                "name": "测试黄金",
+                "type": "gold_accumulate",
+                "grams": 10,
+                "cost_total": 5000.0,
+                "cost_per_gram": 500.0,
+            },
         ]
         snap = compute_portfolio(holdings, prices={})
         assert snap.holdings[0].market_value == pytest.approx(10 * 500.0, abs=0.01)
@@ -289,8 +305,20 @@ class TestPortfolioCompute:
     def test_skip_zero_shares(self):
         """Holdings with 0 shares should be skipped."""
         holdings = [
-            {"code": "sz000002", "name": "测试股票B", "shares": 0, "cost_price": 80.0, "type": "stock"},
-            {"code": "sh600519", "name": "贵州茅台", "shares": 100, "cost_price": 100.0, "type": "stock"},
+            {
+                "code": "sz000002",
+                "name": "测试股票B",
+                "shares": 0,
+                "cost_price": 80.0,
+                "type": "stock",
+            },
+            {
+                "code": "sh600519",
+                "name": "贵州茅台",
+                "shares": 100,
+                "cost_price": 100.0,
+                "type": "stock",
+            },
         ]
         prices = {"sh600519": 110.0}
         snap = compute_portfolio(holdings, prices)
@@ -300,10 +328,36 @@ class TestPortfolioCompute:
     def test_mixed_asset_types(self):
         """Portfolio with stock + fund + gold should compute correctly."""
         holdings = [
-            {"code": "sh601398", "name": "工商银行", "shares": 1000, "cost_price": 5.0, "type": "stock"},
-            {"code": "f_999999", "name": "测试基金A", "shares": 1000, "type": "fund_otc", "nav": 2.5, "cost_price": 2.0},
-            {"code": "test_gold", "name": "测试黄金", "type": "gold_accumulate", "grams": 10, "cost_total": 5000.0, "cost_per_gram": 500.0},
-            {"code": "sz159999", "name": "测试ETF", "shares": 500, "cost_price": 1.0, "type": "etf"},
+            {
+                "code": "sh601398",
+                "name": "工商银行",
+                "shares": 1000,
+                "cost_price": 5.0,
+                "type": "stock",
+            },
+            {
+                "code": "f_999999",
+                "name": "测试基金A",
+                "shares": 1000,
+                "type": "fund_otc",
+                "nav": 2.5,
+                "cost_price": 2.0,
+            },
+            {
+                "code": "test_gold",
+                "name": "测试黄金",
+                "type": "gold_accumulate",
+                "grams": 10,
+                "cost_total": 5000.0,
+                "cost_per_gram": 500.0,
+            },
+            {
+                "code": "sz159999",
+                "name": "测试ETF",
+                "shares": 500,
+                "cost_price": 1.0,
+                "type": "etf",
+            },
         ]
         prices = {"sh601398": 5.50, "sz159999": 1.10}
         snap = compute_portfolio(holdings, prices)
@@ -320,9 +374,7 @@ class TestPortfolioIO:
     """Test portfolio file loading."""
 
     def test_load_portfolio_json(self, tmp_path):
-        data = [
-            {"code": "sh600519", "name": "贵州茅台", "shares": 100, "cost_price": 1800.0}
-        ]
+        data = [{"code": "sh600519", "name": "贵州茅台", "shares": 100, "cost_price": 1800.0}]
         p = tmp_path / "portfolio.json"
         p.write_text(json.dumps(data, ensure_ascii=False))
         result = load_portfolio(p)
@@ -341,13 +393,41 @@ class TestPortfolioDataLoading:
         """Return a full-format portfolio dict."""
         return {
             "holdings": [
-                {"name": "工商银行", "code": "sh601398", "shares": 1000, "cost_price": 5.0, "type": "stock"},
-                {"name": "测试基金A", "code": "f_999999", "shares": 1000, "type": "fund_otc", "nav": 2.5},
-                {"name": "测试黄金", "code": "test_gold", "type": "gold_accumulate", "grams": 10, "cost_total": 5000.0, "cost_per_gram": 500.0},
+                {
+                    "name": "工商银行",
+                    "code": "sh601398",
+                    "shares": 1000,
+                    "cost_price": 5.0,
+                    "type": "stock",
+                },
+                {
+                    "name": "测试基金A",
+                    "code": "f_999999",
+                    "shares": 1000,
+                    "type": "fund_otc",
+                    "nav": 2.5,
+                },
+                {
+                    "name": "测试黄金",
+                    "code": "test_gold",
+                    "type": "gold_accumulate",
+                    "grams": 10,
+                    "cost_total": 5000.0,
+                    "cost_per_gram": 500.0,
+                },
             ],
             "cash": {"total": 10000.0, "note": "test"},
             "closed_positions": [
-                {"name": "测试股票C", "code": "sz000003", "close_date": "2026-03-05", "total_cost": 10000, "total_revenue": 9500, "profit_loss": -500, "return_rate": -5.0, "holding_days": 30}
+                {
+                    "name": "测试股票C",
+                    "code": "sz000003",
+                    "close_date": "2026-03-05",
+                    "total_cost": 10000,
+                    "total_revenue": 9500,
+                    "profit_loss": -500,
+                    "return_rate": -5.0,
+                    "holding_days": 30,
+                }
             ],
             "pending_actions": [],
         }
@@ -366,9 +446,7 @@ class TestPortfolioDataLoading:
 
     def test_load_legacy_format(self, tmp_path):
         """Legacy list format wraps into PortfolioData."""
-        data = [
-            {"code": "sh600519", "name": "贵州茅台", "shares": 100, "cost_price": 1800.0}
-        ]
+        data = [{"code": "sh600519", "name": "贵州茅台", "shares": 100, "cost_price": 1800.0}]
         p = tmp_path / "portfolio.json"
         p.write_text(json.dumps(data, ensure_ascii=False))
         pd = load_portfolio_data(p)
@@ -409,20 +487,24 @@ class TestGetAllStockCodes:
     """Test get_all_stock_codes extraction."""
 
     def test_filters_stock_and_etf(self):
-        pd = PortfolioData(holdings=[
-            Holding(code="sh601398", name="工商银行", shares=1000, type="stock"),
-            Holding(code="f_999999", name="测试基金A", shares=1000, type="fund_otc"),
-            Holding(code="test_gold", name="测试黄金", type="gold_accumulate"),
-            Holding(code="sz159999", name="测试ETF", shares=500, type="etf"),
-        ])
+        pd = PortfolioData(
+            holdings=[
+                Holding(code="sh601398", name="工商银行", shares=1000, type="stock"),
+                Holding(code="f_999999", name="测试基金A", shares=1000, type="fund_otc"),
+                Holding(code="test_gold", name="测试黄金", type="gold_accumulate"),
+                Holding(code="sz159999", name="测试ETF", shares=500, type="etf"),
+            ]
+        )
         codes = get_all_stock_codes(pd)
         assert codes == ["sh601398", "sz159999"]
 
     def test_skips_zero_shares(self):
-        pd = PortfolioData(holdings=[
-            Holding(code="sh601398", name="工商", shares=0, type="stock"),
-            Holding(code="sz159692", name="ETF", shares=1300, type="etf"),
-        ])
+        pd = PortfolioData(
+            holdings=[
+                Holding(code="sh601398", name="工商", shares=0, type="stock"),
+                Holding(code="sz159692", name="ETF", shares=1300, type="etf"),
+            ]
+        )
         codes = get_all_stock_codes(pd)
         assert codes == ["sz159692"]
 
@@ -666,7 +748,12 @@ class TestFormatAnnouncementAlert:
     def test_format_with_keyword_matches(self):
         result = MonitorResult(
             new_keyword_matches=[
-                Announcement(title="收购公告", date="2024-11-15", url="http://example.com", matched_keywords=["收购"]),
+                Announcement(
+                    title="收购公告",
+                    date="2024-11-15",
+                    url="http://example.com",
+                    matched_keywords=["收购"],
+                ),
             ]
         )
         alert = format_announcement_alert("sh600519", "贵州茅台", result)
@@ -769,10 +856,14 @@ class TestDataclasses:
 
     def test_closed_position(self):
         cp = ClosedPosition(
-            name="测试股票C", code="sz000003",
-            close_date="2026-03-05", total_cost=10000,
-            total_revenue=9500, profit_loss=-500,
-            return_rate=-5.0, holding_days=30,
+            name="测试股票C",
+            code="sz000003",
+            close_date="2026-03-05",
+            total_cost=10000,
+            total_revenue=9500,
+            profit_loss=-500,
+            return_rate=-5.0,
+            holding_days=30,
         )
         assert cp.name == "测试股票C"
         assert cp.profit_loss == -500
@@ -854,17 +945,24 @@ class TestQDII:
         fields[47] = "19000.00"
         fields[48] = "15000.00"
         us_raw = 'v_us.NDX="' + "~".join(fields) + '";'
-        etf_raw = 'v_f_021778="1~广发纳斯达克100联接C~021778~1.8500~0.01~1.8600~10000~5000~5000~1.8500~9999~";'
+        etf_raw = (
+            'v_f_021778="1~广发纳斯达克100联接C~021778~'
+            '1.8500~0.01~1.8600~10000~5000~5000~1.8500~9999~";'
+        )
 
         class MockResponse:
             def __init__(self, raw_text):
                 self._text = raw_text
+
             async def text(self, encoding=None):
                 return self._text
+
             async def json(self, content_type=None):
                 return {}
+
             async def __aenter__(self):
                 return self
+
             async def __aexit__(self, *args):
                 pass
 
@@ -1060,20 +1158,26 @@ class TestRisk:
     def test_position_over_limit(self):
         """Position exceeding 25% should alert."""
         holding = {"code": "sh600519", "name": "贵州茅台", "shares": 1000, "cost_price": 100.0}
-        result = check_position_concentration(holding, current_price=100.0, total_portfolio_value=300000.0)
+        result = check_position_concentration(
+            holding, current_price=100.0, total_portfolio_value=300000.0
+        )
         assert result["status"] == "alert"
         assert "超过上限" in result["detail"]
 
     def test_position_under_limit(self):
         """Normal position should be ok."""
         holding = {"code": "sh600519", "name": "贵州茅台", "shares": 100, "cost_price": 100.0}
-        result = check_position_concentration(holding, current_price=100.0, total_portfolio_value=500000.0)
+        result = check_position_concentration(
+            holding, current_price=100.0, total_portfolio_value=500000.0
+        )
         assert result["status"] == "ok"
 
     def test_position_near_limit(self):
         """Position approaching limit should warn."""
         holding = {"code": "sh600519", "name": "贵州茅台", "shares": 2100, "cost_price": 100.0}
-        result = check_position_concentration(holding, current_price=100.0, total_portfolio_value=1000000.0)
+        result = check_position_concentration(
+            holding, current_price=100.0, total_portfolio_value=1000000.0
+        )
         assert result["status"] == "warning"
         assert "接近上限" in result["detail"]
 
@@ -1127,7 +1231,9 @@ class TestRisk:
             {"code": "sh600519", "name": "贵州茅台", "shares": 100, "cost_price": 100.0},
         ]
         custom_rules = {**DEFAULT_RULES, "stop_loss_pct": -5.0}
-        result = run_risk_check(portfolio, {"sh600519": 93.0}, total_value=10000.0, rules=custom_rules)
+        result = run_risk_check(
+            portfolio, {"sh600519": 93.0}, total_value=10000.0, rules=custom_rules
+        )
         assert any(c["status"] == "alert" for c in result.checks)
 
     def test_format_risk_report(self):
@@ -1166,6 +1272,7 @@ class TestEastmoneyCookieManagement:
 
     def test_save_and_load_cookies(self, tmp_path):
         from secretary.wealth.eastmoney_sync import load_cookies, save_cookies
+
         path = tmp_path / "cookies.json"
         cookies = [{"name": "token", "value": "abc123", "domain": ".18.cn"}]
         save_cookies(cookies, {"key": "value"}, path)
@@ -1176,11 +1283,13 @@ class TestEastmoneyCookieManagement:
 
     def test_load_missing_file(self, tmp_path):
         from secretary.wealth.eastmoney_sync import load_cookies
+
         result = load_cookies(tmp_path / "nonexistent.json")
         assert result is None
 
     def test_cookie_fresh(self, tmp_path):
         from secretary.wealth.eastmoney_sync import is_cookie_fresh, save_cookies
+
         path = tmp_path / "cookies.json"
         save_cookies([{"name": "t", "value": "v"}], path=path)
         assert is_cookie_fresh(path, max_age_hours=1) is True
@@ -1190,6 +1299,7 @@ class TestEastmoneyCookieManagement:
         from datetime import datetime, timedelta
 
         from secretary.wealth.eastmoney_sync import is_cookie_fresh
+
         path = tmp_path / "cookies.json"
         data = {
             "cookies": [],
@@ -1205,10 +1315,17 @@ class TestEastmoneyParsing:
 
     def test_parse_holding(self):
         from secretary.wealth.eastmoney_sync import _parse_holding
+
         item = {
-            "Zqdm": "601398", "Zqmc": "工商银行",
-            "Zqsl": "4500", "Kysl": "4500", "Cbjg": "7.16",
-            "Zxjg": "7.25", "Zxsz": "32625.0", "Ykje": "405.0", "Ykbl": "1.26",
+            "Zqdm": "601398",
+            "Zqmc": "工商银行",
+            "Zqsl": "4500",
+            "Kysl": "4500",
+            "Cbjg": "7.16",
+            "Zxjg": "7.25",
+            "Zxsz": "32625.0",
+            "Ykje": "405.0",
+            "Ykbl": "1.26",
         }
         h = _parse_holding(item)
         assert h is not None
@@ -1219,21 +1336,36 @@ class TestEastmoneyParsing:
 
     def test_parse_holding_empty(self):
         from secretary.wealth.eastmoney_sync import _parse_holding
+
         assert _parse_holding({}) is None
 
     def test_parse_assets(self):
         from secretary.wealth.eastmoney_sync import _parse_assets
-        data = {"Zzc": "100000", "Zsz": "55000", "Kyzj": "45000", "Djzj": "0", "Yk": "500", "Ccyk": "2000"}
+
+        data = {
+            "Zzc": "100000",
+            "Zsz": "55000",
+            "Kyzj": "45000",
+            "Djzj": "0",
+            "Yk": "500",
+            "Ccyk": "2000",
+        }
         a = _parse_assets(data)
         assert a.total_assets == 100000.0
         assert a.available_cash == 45000.0
 
     def test_parse_trade(self):
         from secretary.wealth.eastmoney_sync import _parse_trade
+
         item = {
-            "Cjrq": "20260713", "Cjsj": "10:30:00",
-            "Zqdm": "601398", "Zqmc": "工商银行",
-            "Mmlb": "买入", "Cjjg": "7.27", "Cjsl": "3500", "Cjje": "25445.0",
+            "Cjrq": "20260713",
+            "Cjsj": "10:30:00",
+            "Zqdm": "601398",
+            "Zqmc": "工商银行",
+            "Mmlb": "买入",
+            "Cjjg": "7.27",
+            "Cjsl": "3500",
+            "Cjje": "25445.0",
         }
         t = _parse_trade(item)
         assert t is not None
@@ -1243,7 +1375,17 @@ class TestEastmoneyParsing:
 
     def test_parse_trade_sell(self):
         from secretary.wealth.eastmoney_sync import _parse_trade
-        item = {"Zqdm": "300001", "Zqmc": "测试股票A", "Mmlb": "卖出", "Cjjg": "80.79", "Cjsl": "200", "Cjje": "16158.0", "Cjrq": "20260713", "Cjsj": "14:00:00"}
+
+        item = {
+            "Zqdm": "300001",
+            "Zqmc": "测试股票A",
+            "Mmlb": "卖出",
+            "Cjjg": "80.79",
+            "Cjsl": "200",
+            "Cjje": "16158.0",
+            "Cjrq": "20260713",
+            "Cjsj": "14:00:00",
+        }
         t = _parse_trade(item)
         assert t.action == "sell"
 
@@ -1257,17 +1399,38 @@ class TestSyncToPortfolio:
         from secretary.wealth.eastmoney_sync import AccountAssets, AccountHolding, sync_to_portfolio
 
         portfolio_path = tmp_path / "portfolio.json"
-        portfolio_path.write_text(json.dumps({
-            "holdings": [
-                {"name": "工商银行", "code": "sh601398", "shares": 1000, "cost_price": 7.0, "type": "stock"},
-            ],
-            "cash": {"total": 10000},
-            "closed_positions": [],
-            "pending_actions": [],
-        }))
+        portfolio_path.write_text(
+            json.dumps(
+                {
+                    "holdings": [
+                        {
+                            "name": "工商银行",
+                            "code": "sh601398",
+                            "shares": 1000,
+                            "cost_price": 7.0,
+                            "type": "stock",
+                        },
+                    ],
+                    "cash": {"total": 10000},
+                    "closed_positions": [],
+                    "pending_actions": [],
+                }
+            )
+        )
 
-        holdings = [AccountHolding(code="601398", name="工商银行", shares=4500, available_shares=4500,
-                                    cost_price=7.16, current_price=7.25, market_value=32625, profit=405, profit_pct=1.26)]
+        holdings = [
+            AccountHolding(
+                code="601398",
+                name="工商银行",
+                shares=4500,
+                available_shares=4500,
+                cost_price=7.16,
+                current_price=7.25,
+                market_value=32625,
+                profit=405,
+                profit_pct=1.26,
+            )
+        ]
         assets = AccountAssets(total_assets=50000, available_cash=17375)
 
         changes = sync_to_portfolio(holdings, assets, portfolio_path)
@@ -1284,12 +1447,30 @@ class TestSyncToPortfolio:
         from secretary.wealth.eastmoney_sync import AccountHolding, sync_to_portfolio
 
         portfolio_path = tmp_path / "portfolio.json"
-        portfolio_path.write_text(json.dumps({
-            "holdings": [], "cash": {"total": 0}, "closed_positions": [], "pending_actions": [],
-        }))
+        portfolio_path.write_text(
+            json.dumps(
+                {
+                    "holdings": [],
+                    "cash": {"total": 0},
+                    "closed_positions": [],
+                    "pending_actions": [],
+                }
+            )
+        )
 
-        holdings = [AccountHolding(code="601398", name="工商银行", shares=100, available_shares=100,
-                                    cost_price=7.0, current_price=7.2, market_value=720, profit=20, profit_pct=2.86)]
+        holdings = [
+            AccountHolding(
+                code="601398",
+                name="工商银行",
+                shares=100,
+                available_shares=100,
+                cost_price=7.0,
+                current_price=7.2,
+                market_value=720,
+                profit=20,
+                profit_pct=2.86,
+            )
+        ]
 
         changes = sync_to_portfolio(holdings, None, portfolio_path)
         assert len(changes["added"]) == 1
@@ -1298,6 +1479,7 @@ class TestSyncToPortfolio:
 
     def test_market_code_conversion(self):
         from secretary.wealth.eastmoney_sync import _market_code
+
         assert _market_code("601398") == "sh601398"
         assert _market_code("300442") == "sz300442"
         assert _market_code("sh601398") == "sh601398"
@@ -1308,6 +1490,7 @@ class TestFormatSyncReport:
 
     def test_format_error(self):
         from secretary.wealth.eastmoney_sync import SyncResult, format_sync_report
+
         result = SyncResult(error="No cookies")
         report = format_sync_report(result)
         assert "失败" in report
@@ -1319,10 +1502,22 @@ class TestFormatSyncReport:
             SyncResult,
             format_sync_report,
         )
+
         result = SyncResult(
             assets=AccountAssets(total_assets=100000, market_value=50000, available_cash=50000),
-            holdings=[AccountHolding(code="601398", name="工商银行", shares=100, available_shares=100,
-                                      cost_price=7.0, current_price=7.2, market_value=720, profit=20, profit_pct=2.86)],
+            holdings=[
+                AccountHolding(
+                    code="601398",
+                    name="工商银行",
+                    shares=100,
+                    available_shares=100,
+                    cost_price=7.0,
+                    current_price=7.2,
+                    market_value=720,
+                    profit=20,
+                    profit_pct=2.86,
+                )
+            ],
         )
         report = format_sync_report(result)
         assert "工商银行" in report

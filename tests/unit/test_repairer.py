@@ -37,16 +37,12 @@ class TestRepairAction:
 
     def test_auto_allowed_requires_confirm(self):
         """Even whitelisted types blocked when requires_confirm=True."""
-        action = RepairAction(
-            action_type="service_down", target="x", requires_confirm=True
-        )
+        action = RepairAction(action_type="service_down", target="x", requires_confirm=True)
         assert not action.is_auto_allowed()
 
     def test_auto_allowed_unknown_type(self):
         """Non-whitelisted types require confirmation."""
-        action = RepairAction(
-            action_type="unknown_anomaly", target="x", requires_confirm=False
-        )
+        action = RepairAction(action_type="unknown_anomaly", target="x", requires_confirm=False)
         assert not action.is_auto_allowed()
 
     def test_defaults(self):
@@ -114,9 +110,7 @@ class TestAnomalyDetection:
         assert _detect_anomaly_type(result) == "cron_stuck"
 
     def test_detect_unknown(self):
-        result = CheckResult(
-            name="mystery_check", status="warning", message="something weird"
-        )
+        result = CheckResult(name="mystery_check", status="warning", message="something weird")
         assert _detect_anomaly_type(result) is None
 
     def test_extract_target_service(self):
@@ -326,7 +320,7 @@ class TestAutoRepairerDiskFull:
         old_gz.write_text("gz")
         os.utime(old_gz, (old_time, old_time))
 
-        new_log = log_dir / "app.log"
+        log_dir / "app.log"
         # overwrite with same name, but new time - skip, old_log already deleted
 
         result = CheckResult(
@@ -337,7 +331,6 @@ class TestAutoRepairerDiskFull:
         )
 
         # Patch the _execute_disk_repair to use our log_dir
-        original_execute = repairer._execute_disk_repair
 
         async def patched_execute(target):
             cleaned = []
