@@ -12,7 +12,7 @@
 <a href="#核心特性"><img src="https://img.shields.io/badge/%E5%BB%B6%E8%BF%9F-≈0ms-22C55E?style=for-the-badge" alt="≈0ms"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF-MIT-blue?style=for-the-badge" alt="MIT"></a>
 <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/PYTHON-3.10+-blue?style=for-the-badge" alt="Python 3.10+"></a>
-<a href="#核心特性"><img src="https://img.shields.io/badge/%E4%BA%BA%E6%9C%AC%E4%B8%BB%E4%B9%89%E8%AE%BE%E8%AE%A1-purple?style=for-the-badge" alt="人本主义设计"></a>
+<a href="#核心特性"><img src="https://img.shields.io/badge/%E4%BA%BA%E6%9C%AC%E4%B8%BB%E4%B9%89-%E8%AE%BE%E8%AE%A1-purple?style=for-the-badge" alt="人本主义设计"></a>
 </p>
 
 > 7×24 常驻守护进程：监控服务器健康、目标进度、知识库、财富引擎——主动通过 QQ 和邮件推送消息。

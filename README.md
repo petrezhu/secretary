@@ -10,10 +10,11 @@
 
 <p>
 <a href="#core-features"><img src="https://img.shields.io/badge/tokens-0-22C55E?style=for-the-badge" alt="0 tokens"></a>
+<a href="#core-features"><img src="https://img.shields.io/badge/7%C3%9724-Always%20On-brightgreen?style=for-the-badge" alt="7×24 Always On"></a>
 <a href="#core-features"><img src="https://img.shields.io/badge/latency-≈0ms-22C55E?style=for-the-badge" alt="≈0ms"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT"></a>
 <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue?style=for-the-badge" alt="Python 3.10+"></a>
-<a href="#core-features"><img src="https://img.shields.io/badge/humanistic-design-purple?style=for-the-badge" alt="Humanistic"></a>
+<a href="#core-features"><img src="https://img.shields.io/badge/Humanistic-Design-purple?style=for-the-badge" alt="Humanistic Design"></a>
 </p>
 
 **English** | [简体中文](README.zh-CN.md)
