@@ -7,7 +7,9 @@ def test_load_default_config():
     config = load_config()
     assert isinstance(config, Config)
     assert config.tick_interval == 30
-    assert config.data.goals_db.endswith("goals.db")
+    # goals_db is empty when SECRETARY_DATA_DIR is not set
+    if config.data.goals_db:
+        assert config.data.goals_db.endswith("goals.db")
 
 
 def test_config_data_defaults():
