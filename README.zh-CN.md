@@ -8,6 +8,7 @@
 
 <p align="center">
 <a href="#核心特性"><img src="https://img.shields.io/badge/%E8%AF%8D%E5%85%83-0-22C55E?style=for-the-badge" alt="0 词元"></a>
+<a href="#核心特性"><img src="https://img.shields.io/badge/7%C3%9724-%E5%B0%8F%E6%97%B6%E5%80%BC%E5%AE%88-brightgreen?style=for-the-badge" alt="7×24小时值守"></a>
 <a href="#核心特性"><img src="https://img.shields.io/badge/%E5%BB%B6%E8%BF%9F-≈0ms-22C55E?style=for-the-badge" alt="≈0ms"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF-MIT-blue?style=for-the-badge" alt="MIT"></a>
 <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/PYTHON-3.10+-blue?style=for-the-badge" alt="Python 3.10+"></a>
