@@ -26,11 +26,34 @@ description: "Sediment a conversation into a Secretary ColdSkill (0-token capabi
 |------|---------|------|
 | `literal` | 固定答案的问答（FAQ、"X是什么"） | skill.json（含 replies） |
 | `attach` | 答案已有核心意图承载，只差触发词 | skill.json（target + keywords） |
-| `script` | 需要确定性计算/实时数据（价格、换算、查表） | skill.json + script.py + test_script.py |
+| `script` | 需要确定性计算/实时数据（价格、换算、日期计算、查表） | skill.json + script.py + test_script.py |
 
 核心意图清单（attach 的合法 target）：`portfolio` `market` `qdii` `gold` `task_status` `task_create` `task_complete` `task_detail` `today_focus` `longterm_goals` `inbox` `system_health` `checkpoint` `morning_briefing` `system_registry` `memory_query` `memory_add` `memory_pending` `help`。
 
 **Agent 允许生成 script 模式**（用户 2026-09-16 决策），但必须满足测试硬门（见下）。
+
+**模式判断例**："第几周" 答案随时间变化 → 是计算不是固定文案 → script 模式，不是 literal。
+
+## ⛔ 三条铁律（2026-09-16 实战教训，违反即伪沉淀）
+
+1. **产物进 cold-skills 仓库，不是 Hermes 技能目录。**
+   禁止用 `skill_manage` 创建 ColdSkill——那是 Hermes 热技能（进 prompt 烧 token），
+   与 ColdSkill（0 token，规则引擎执行）是两个物种。伪产物示例：
+   `/root/.hermes/profiles/main/skills/<id>/SKILL.md` ← **永远不是这里**
+   正确产物：`$SECRETARY_COLD_SKILLS_DIR/<id>/skill.json` (+ script.py)
+
+2. **id 必须 snake_case。** `^[a-z][a-z0-9_]*$`。`week-number-query` 会被 loader
+   拒载（`id not snake_case, skipped`），用 `week_number_query`。写完 skill.json
+   先本地自检：`python3 -c "import json,re; m=json.load(open('skill.json')); assert re.match(r'^[a-z][a-z0-9_]*$', m['id'])"`
+
+3. **必须 curl 验证生效后才能报告成功。** 写入+push ≠ 生效。提交后跑：
+   ```bash
+   curl -s -X POST http://127.0.0.1:8901/api/inbound -H "Content-Type: application/json" \
+     -d '{"text":"<关键词>","user_id":"sediment_test","chat_id":"sediment_test"}'
+   ```
+   `action=handle` 且回复正确 → 才能说"已创建"。验证失败时查
+   `journalctl -t secretary -n 20`（ColdSkill skipped 行即拒载原因）。
+   2026-09-16 事故：Agent 未验证即宣布成功，用户实测放行 Agent，伪沉淀。
 
 ## 关键词纪律（硬约束）
 
@@ -127,7 +150,7 @@ curl -s -X POST http://127.0.0.1:8901/api/inbound \
 
 | 症状 | 原因 | 处置 |
 |------|------|------|
-| curl 验证 action=allow | 关键词与核心意图重叠 / 打错字 | 查重叠，改 keywords，重推 |
-| 技能列表看不到 | manifest schema 校验失败（id/version/mode） | 对照 schema 逐字段查 |
+| curl 验证 action=allow | id 非 snake_case / keywords 与核心意图重叠 / manifest 校验失败 | 查 `journalctl -t secretary` 的 ColdSkill skipped 行，逐条修 |
+| 技能列表看不到 | 同上，schema 校验失败（id/version/mode/handler） | 对照 manifest 契约逐字段查 |
 | script 不执行 | 缺 test_script.py 或 run 签名错 | loader 硬约束，补文件 |
 | push 失败 | 无 remote / 网络 | 本地已生效，告知用户稍后手动推 |
