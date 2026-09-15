@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import signal
+import time
 from datetime import datetime
 
 from secretary.config import Config
@@ -162,6 +163,41 @@ class SecretaryDaemon:
                 name="evening_review",
                 action=_evening_review_action,
                 interval_seconds=600,  # check every 10 min
+                resource_check=False,
+            )
+        )
+
+        # Register cold-skill candidate mining job (weekly aggregation of
+        # repeated "allow" queries into rule_candidates.json). Pure-function
+        # pipeline, zero LLM; failures are logged and never disturb the loop.
+        async def _candidate_mining_action() -> None:
+            """Aggregate queries.jsonl into candidate rules and persist them."""
+            try:
+                from secretary.coldskill.mining import (
+                    aggregate_queries,
+                    candidates_path,
+                    queries_path,
+                    write_candidates,
+                )
+
+                mining = self.config.mining
+                candidates = aggregate_queries(
+                    queries_path(),
+                    now=time.time(),
+                    min_count=mining.min_count,
+                    window_days=mining.window_days,
+                    data_span_days=mining.data_span_days,
+                )
+                write_candidates(candidates, candidates_path())
+                logger.info("Candidate mining: %d candidate(s) written", len(candidates))
+            except Exception:
+                logger.warning("Candidate mining job failed", exc_info=True)
+
+        self.scheduler.add_job(
+            Job(
+                name="candidate_mining",
+                action=_candidate_mining_action,
+                interval_seconds=604800,  # weekly
                 resource_check=False,
             )
         )

@@ -101,9 +101,15 @@ class TestNotificationDedup:
     async def test_different_anomalies_independent(self, tmp_path):
         """Different anomaly names should have independent cooldowns."""
         scheduler = _make_scheduler(tmp_path)
-        anomaly_health = CheckResult(name="health", status="warning", message="health issue")
-        anomaly_deadman = CheckResult(name="deadman", status="warning", message="deadman issue")
-        scheduler.checkers.run_all = AsyncMock(return_value=[anomaly_health, anomaly_deadman])
+        anomaly_health = CheckResult(
+            name="health", status="warning", message="health issue"
+        )
+        anomaly_deadman = CheckResult(
+            name="deadman", status="warning", message="deadman issue"
+        )
+        scheduler.checkers.run_all = AsyncMock(
+            return_value=[anomaly_health, anomaly_deadman]
+        )
 
         await scheduler.run_check_pipeline()
         assert scheduler.dispatcher.send.call_count == 2
@@ -112,7 +118,9 @@ class TestNotificationDedup:
     async def test_cooldown_state_stored(self, tmp_path):
         """Cooldown dict should be populated after successful notification."""
         scheduler = _make_scheduler(tmp_path)
-        anomaly = CheckResult(name="health", status="warning", message="test")
+        anomaly = CheckResult(
+            name="health", status="warning", message="test"
+        )
         scheduler.checkers.run_all = AsyncMock(return_value=[anomaly])
 
         assert "health" not in scheduler._notify_cooldown
@@ -123,7 +131,9 @@ class TestNotificationDedup:
     async def test_cooldown_tracks_time(self, tmp_path):
         """Cooldown should store the time of last notification."""
         scheduler = _make_scheduler(tmp_path)
-        anomaly = CheckResult(name="health", status="warning", message="test")
+        anomaly = CheckResult(
+            name="health", status="warning", message="test"
+        )
         scheduler.checkers.run_all = AsyncMock(return_value=[anomaly])
 
         before = datetime.now()

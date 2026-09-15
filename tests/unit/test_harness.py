@@ -214,7 +214,7 @@ class TestHermesHarnessConstruction:
         assert h.base_url == _DEFAULT_BASE_URL.rstrip("/")
         assert h.api_key == _DEFAULT_API_KEY
         assert len(h.model_pool) > 0
-        asyncio.get_event_loop().run_until_complete(h.close()) if False else None
+        h2 = asyncio.get_event_loop().run_until_complete(h.close()) if False else None
 
     def test_custom_values(self):
         h = HermesHarness(
@@ -272,7 +272,9 @@ class TestHermesHarnessHealthCheck:
 
 class TestHermesHarnessLlmCall:
     async def test_llm_call_success_first_model(self):
-        response_json = {"choices": [{"message": {"content": "Hello from model"}}]}
+        response_json = {
+            "choices": [{"message": {"content": "Hello from model"}}]
+        }
         mock_session, mock_resp = _mock_aiohttp_session(
             response_json=response_json, response_status=200
         )

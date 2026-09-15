@@ -11,18 +11,10 @@ from secretary.gateway.intents.base import IntentContext
 logger = logging.getLogger(__name__)
 
 _HELP_KW = {
-    "/help",
-    "帮助",
-    "你能做什么",
-    "你会什么",
-    "有什么指令",
-    "有什么命令",
-    "有什么功能",
-    "有啥指令",
-    "有啥命令",
-    "有啥功能",
-    "怎么用你",
-    "你会干嘛",
+    "/help", "帮助", "你能做什么", "你会什么",
+    "有什么指令", "有什么命令", "有什么功能",
+    "有啥指令", "有啥命令", "有啥功能",
+    "怎么用你", "你会干嘛",
 }
 
 # Domain labels for display
@@ -41,6 +33,7 @@ _DOMAIN_LABELS = {
     "portfolio": "财富",
     "market": "财富",
     "qdii": "财富",
+    "gold": "财富",
     "system_health": "系统",
     "checkpoint": "系统",
     "morning_briefing": "系统",
@@ -68,6 +61,7 @@ _HANDLER_DESCRIPTIONS = {
     "portfolio": "持仓 / 查持仓 — 详细持仓列表",
     "market": "大盘 / 行情 / 沪深300 — 指数实时涨跌",
     "qdii": "qdii / 溢价 — 引导 Agent 做套利分析",
+    "gold": "金价 / 黄金 — 上金所Au(T+D)实时价",
     "system_health": "服务器 / 内存 / 磁盘 — CPU/内存/磁盘",
     "checkpoint": "上次存档 — 距上次存档多少天",
     "morning_briefing": "早报 / 日报 — 重发今日简报",
@@ -84,6 +78,7 @@ def generate_help_text(registry: Any) -> str:
     """Dynamically generate help text from the intent registry.
 
     Scans all registered handlers and builds a grouped keyword table.
+    ColdSkills render in their own section from the loader's manifest data.
     """
     lines = ["📖 我能直接答这些（不用等 Agent）："]
     lines.append("")
@@ -97,6 +92,10 @@ def generate_help_text(registry: Any) -> str:
         if name in seen_handlers:
             continue
         seen_handlers.add(name)
+
+        # ColdSkill-backed handlers render in the dedicated section instead
+        if name.startswith("coldskill:"):
+            continue
 
         # Get domain label
         domain = _DOMAIN_LABELS.get(name, "其他")
@@ -131,6 +130,18 @@ def generate_help_text(registry: Any) -> str:
             lines.extend(domains[domain_name])
             lines.append("")
 
+    # ── ColdSkill section ──────────────────────────────────────────────
+    loader = getattr(registry, "_skill_loader", None)
+    skills = loader.skills if loader is not None else []
+    if skills:
+        lines.append("🧊 冷技能")
+        for skill in skills:
+            m = skill.manifest
+            keywords = " / ".join(sorted(m.keywords)[:5])
+            desc = m.description or m.id
+            lines.append(f"  {desc} — {keywords}")
+        lines.append("")
+
     lines.append("⚠️ 以上关键词需精确输入才会直接响应。")
     lines.append("包含更多内容的句子会转给 Agent 处理。")
 
@@ -145,21 +156,40 @@ class HelpHandler:
         self.patterns = []
         self._registry = registry
         self._cached_text: str | None = None
+        self._cached_fp: str | None = None
 
     def set_registry(self, registry: Any) -> None:
         """Set the registry reference for dynamic help generation."""
         self._registry = registry
         self._cached_text = None  # Invalidate cache
+        self._cached_fp = None
+
+    def _skills_fingerprint(self) -> str:
+        """Change only when the rendered cold-skill lines would change."""
+        registry = self._registry
+        if registry is None:
+            return "none"
+        loader = getattr(registry, "_skill_loader", None)
+        if loader is None:
+            return "none"
+        parts = []
+        for skill in loader.skills:
+            m = skill.manifest
+            parts.append(
+                f"{m.id}|{m.description}|{'~'.join(sorted(m.keywords))}"
+            )
+        return "::".join(parts)
 
     async def handle(self, ctx: IntentContext) -> str:
-        if self._cached_text:
-            return self._cached_text
+        if self._registry is None:
+            return _STATIC_HELP_TEXT
 
-        if self._registry:
-            self._cached_text = generate_help_text(self._registry)
-        else:
-            # Fallback to static text if registry not available
-            self._cached_text = _STATIC_HELP_TEXT
+        fp = self._skills_fingerprint()
+        if fp != self._cached_fp:
+            self._cached_fp = fp
+            text = generate_help_text(self._registry)
+            self._cached_text = text
+        assert self._cached_text is not None
         return self._cached_text
 
 

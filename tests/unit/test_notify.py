@@ -190,9 +190,7 @@ class TestDispatcher:
         assert len(mock_email.calls) == 1
 
     @pytest.mark.asyncio
-    async def test_send_to_both(
-        self, dispatcher: Dispatcher, mock_qq: MockQQAdapter, mock_email: MockEmailAdapter
-    ):
+    async def test_send_to_both(self, dispatcher: Dispatcher, mock_qq: MockQQAdapter, mock_email: MockEmailAdapter):
         dispatcher.register_adapter("qq", mock_qq)
         dispatcher.register_adapter("email", mock_email)
         n = _make_notification(channel="both")
@@ -231,9 +229,7 @@ class TestDispatcher:
         assert "No adapter" in result.error
 
     @pytest.mark.asyncio
-    async def test_adapter_receives_formatted_text(
-        self, dispatcher: Dispatcher, mock_qq: MockQQAdapter, monkeypatch: pytest.MonkeyPatch
-    ):
+    async def test_adapter_receives_formatted_text(self, dispatcher: Dispatcher, mock_qq: MockQQAdapter, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("SECRETARY_USER_NAME", "主人")
         dispatcher.register_adapter("qq", mock_qq)
         n = _make_notification(level=NotificationLevel.CRITICAL, body="服务挂了", channel="qq")
@@ -243,9 +239,7 @@ class TestDispatcher:
         assert "服务挂了" in sent_text
 
     @pytest.mark.asyncio
-    async def test_health_check(
-        self, dispatcher: Dispatcher, mock_qq: MockQQAdapter, mock_email: MockEmailAdapter
-    ):
+    async def test_health_check(self, dispatcher: Dispatcher, mock_qq: MockQQAdapter, mock_email: MockEmailAdapter):
         dispatcher.register_adapter("qq", mock_qq)
         dispatcher.register_adapter("email", mock_email)
         results = await dispatcher.health_check()

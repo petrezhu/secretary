@@ -79,7 +79,9 @@ class HermesHarness(BaseHarness):
                 "max_tokens": context.get("max_tokens", 2048),
             }
             try:
-                async with session.post(f"{self.base_url}/chat/completions", json=payload) as resp:
+                async with session.post(
+                    f"{self.base_url}/chat/completions", json=payload
+                ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         return data["choices"][0]["message"]["content"]
@@ -90,7 +92,9 @@ class HermesHarness(BaseHarness):
                 last_error = f"model={model}: {exc}"
                 logger.warning("LLM connection error: %s", last_error)
 
-        raise HarnessConnectionError(f"All models in pool exhausted. Last error: {last_error}")
+        raise HarnessConnectionError(
+            f"All models in pool exhausted. Last error: {last_error}"
+        )
 
     async def _do_execute_tool(self, tool: str, params: dict[str, Any]) -> dict[str, Any]:
         """Execute a tool — placeholder implementation.

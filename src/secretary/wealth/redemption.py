@@ -85,9 +85,13 @@ class RedemptionTracker:
         if today_str < redemption.confirm_date:
             return False
         # After 15:30 CST (market close)
-        return not (now.hour < 15 or now.hour == 15 and now.minute < 30)
+        if now.hour < 15 or (now.hour == 15 and now.minute < 30):
+            return False
+        return True
 
-    async def confirm_redemption(self, redemption: PendingRedemption, nav: float) -> dict:
+    async def confirm_redemption(
+        self, redemption: PendingRedemption, nav: float
+    ) -> dict:
         """Confirm a redemption with the given NAV.
 
         1. Compute confirm_amount = shares * nav
@@ -129,18 +133,16 @@ class RedemptionTracker:
             # Fully redeemed — move to closed_positions
             holding["shares"] = 0
             closed = data.get("closed_positions", [])
-            closed.append(
-                {
-                    "code": holding.get("code"),
-                    "name": holding.get("name"),
-                    "shares": redemption.shares_submitted,
-                    "sell_nav": nav,
-                    "sell_amount": confirm_amount,
-                    "avg_cost": avg_cost,
-                    "realized_pnl": realized_pnl,
-                    "closed_date": datetime.now().strftime("%Y-%m-%d"),
-                }
-            )
+            closed.append({
+                "code": holding.get("code"),
+                "name": holding.get("name"),
+                "shares": redemption.shares_submitted,
+                "sell_nav": nav,
+                "sell_amount": confirm_amount,
+                "avg_cost": avg_cost,
+                "realized_pnl": realized_pnl,
+                "closed_date": datetime.now().strftime("%Y-%m-%d"),
+            })
             data["closed_positions"] = closed
         else:
             holding["shares"] = round(remaining_shares, 4)
@@ -174,7 +176,9 @@ class RedemptionTracker:
             lines.append(f"到账金额: ¥{redemption.confirm_amount:,.2f}")
         if redemption.realized_pnl is not None:
             pnl_emoji = "📈" if redemption.realized_pnl >= 0 else "📉"
-            lines.append(f"{pnl_emoji} 实现盈亏: ¥{redemption.realized_pnl:,.2f}")
+            lines.append(
+                f"{pnl_emoji} 实现盈亏: ¥{redemption.realized_pnl:,.2f}"
+            )
         if redemption.note:
             lines.append(f"备注: {redemption.note}")
         return "\n".join(lines)

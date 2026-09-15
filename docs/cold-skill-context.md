@@ -69,7 +69,7 @@ Secretary 是沉淀式智能体：规则引擎处理确定性业务，数据积�
 
 - **独立 git 仓库**（决策 1）：用户级冷技能单独成库，不混入 Secretary 代码库。
   - 远端：Forgejo（主）+ GitHub（备份），与 secretary-gateway 双推惯例一致。
-  - 运行时通过环境变量 `SECRETARY_COLD_SKILLS_DIR` 定位技能目录。
+  - 运行时通过环境变量定位技能目录（默认 `/root/git/secretary-cold-skills`）。
 - **加载器**（ColdSkillLoader）：构建 registry 后扫描技能目录：
   - 依赖 manifest schema 静态校验（硬约束）；
   - script 模式做入口签名断言（`run(ctx)` 存在、返回 `str | None`）+ 测试文件存在性检查（硬约束）；

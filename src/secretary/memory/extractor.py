@@ -20,7 +20,6 @@ _CONFIG_DIR = Path(__file__).parent.parent.parent.parent / "config"
 @dataclass
 class ExtractionResult:
     """Result of memory extraction from text."""
-
     entities: list[str]
     memory_type: str  # decision, intent, fact, preference
     tags: list[str]
@@ -29,7 +28,6 @@ class ExtractionResult:
 
 
 # ── Entity patterns ──────────────────────────────────────────────────────────
-
 
 # Stock names — loaded from config/local_stocks.json (gitignored)
 def _load_stock_patterns(local_file: Path | None = None) -> list[str]:
@@ -202,4 +200,7 @@ def is_memorable_message(text: str) -> bool:
         return False
 
     # Skip slash commands
-    return not text.startswith("/")
+    if text.startswith("/"):
+        return False
+
+    return True

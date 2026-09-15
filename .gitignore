@@ -31,13 +31,3 @@ config/local_stocks.json
 
 # ── External symlinks ───────────────────────────────────
 plugins/gateway-interceptor
-
-# ── Virtual environments ────────────────────────────────
-.venv/
-venv/
-
-# ── Coverage ────────────────────────────────────────────
-htmlcov/
-.coverage
-.coverage.*
-coverage.xml

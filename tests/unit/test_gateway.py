@@ -81,7 +81,6 @@ def client(mock_registry: AdapterRegistry) -> TestClient:
     """Create a FastAPI TestClient with mock adapters injected."""
     # Patch the global registry
     import secretary.gateway.api as api_module
-
     original = api_module._registry
 
     api_module._registry = mock_registry
@@ -100,7 +99,6 @@ def client(mock_registry: AdapterRegistry) -> TestClient:
 def client_failing(mock_registry_failing: AdapterRegistry) -> TestClient:
     """Create a TestClient with failing adapters."""
     import secretary.gateway.api as api_module
-
     original = api_module._registry
 
     api_module._registry = mock_registry_failing
@@ -400,9 +398,7 @@ class TestServeCommand:
         from secretary.__main__ import build_parser
 
         parser = build_parser()
-        args = parser.parse_args(
-            ["serve", "--host", "127.0.0.1", "--port", "9999", "--log-level", "debug"]
-        )
+        args = parser.parse_args(["serve", "--host", "127.0.0.1", "--port", "9999", "--log-level", "debug"])
         assert args.host == "127.0.0.1"
         assert args.port == 9999
         assert args.log_level == "debug"

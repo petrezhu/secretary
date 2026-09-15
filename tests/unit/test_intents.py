@@ -8,11 +8,10 @@ from secretary.gateway.intents import (
     IntentContext,
     build_default_registry,
 )
-from secretary.gateway.intents.base import _exact_keywords, quiet_hour
+from secretary.gateway.intents.base import _exact_keywords, quiet_hour, split_reply
 
 
-def make_ctx(text: str, repo=None, config=None) -> IntentContext:
-    return IntentContext(text=text, repo=repo, config=config)
+from tests.helpers import make_ctx
 
 
 # ── Registry mechanics ───────────────────────────────────────────────────
@@ -25,6 +24,18 @@ def test_registry_none_match_returns_none():
 
     reply, intent, conf = asyncio.run(reg.dispatch(make_ctx("帮我写一个Python脚本处理CSV")))
     assert reply is None and intent is None
+
+
+def test_split_reply_long_chunks():
+    long = "x" * 900
+    chunks = split_reply(long)
+    assert len(chunks) > 1
+    assert all(len(c) <= 500 for c in chunks)
+    assert "".join(chunks) == long
+
+
+def test_split_reply_short_untouched():
+    assert split_reply("你好") == ["你好"]
 
 
 def test_quiet_hour_boundaries():

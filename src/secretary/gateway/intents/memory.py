@@ -11,28 +11,19 @@ logger = logging.getLogger(__name__)
 
 # Keywords to trigger memory query
 _MEMORY_QUERY_KW = {
-    "我之前说过什么",
-    "我说过什么",
-    "之前说过什么",
-    "有什么记忆",
-    "记忆",
-    "你记得什么",
-    "我打算做什么",
+    "我之前说过什么", "我说过什么", "之前说过什么",
+    "有什么记忆", "记忆", "你记得什么",
+      "我打算做什么",
 }
 
 # Keywords to trigger memory add
 _MEMORY_ADD_KW = {
-    "记住这个",
-    "记下这个",
-    "记住",
-    "记下",
+    "记住这个", "记下这个", "记住", "记下",
 }
 
 # Keywords to trigger pending intents
 _MEMORY_PENDING_KW = {
-    "待办意图",
-    "有什么打算",
-    "未完成意图",
+      "待办意图", "有什么打算", "未完成意图",
 }
 
 
@@ -89,14 +80,24 @@ class MemoryAddHandler:
         """Check if user explicitly asks to remember something."""
         text = ctx.text.strip()
 
-        # Check for explicit "记住XXX" pattern
+        # Check for explicit "记住XXX" pattern.
+        # Regression guard (2026-09-15): "记住这个" alone must NOT store
+        # "这个" — the old regex backtracked so (.+) captured the literal
+        # "这个" tail. Require real content after the trigger word.
         import re
-
-        match = re.match(r"(?:记住|记下)(?:这个)?[：:\s]*(.+)", text)
+        match = re.match(r"(?:记住|记下)(?:这个)?[：:\s]+(.+)", text)
         if not match:
-            return None
+            # No separator: allow "记住XXX" where XXX is non-empty content
+            # other than the bare echo word itself.
+            match = re.match(r"(?:记住|记下)(.+)", text)
+            if not match:
+                return None
+            content = match.group(1).strip()
+            if not content or content in ("这个", "那个", "一下", "它"):
+                return None
+        else:
+            content = match.group(1).strip()
 
-        content = match.group(1).strip()
         if not content:
             return None
 

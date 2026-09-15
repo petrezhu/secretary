@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 from secretary.data.repository import Task
 
@@ -81,7 +80,7 @@ class AdaptivePlanner:
             limit = max(1, len(tasks) // 3)
             return tasks[:limit], f"精力不足({energy.score:.0f})，今天只做最重要的 {limit} 件事"
 
-        # Rule 2: Consecutive failures → reduce difficulty (pick only easy/low-pri tasks)
+        # Rule 2: Consecutive failures → reduce difficulty (pick only easy/low-priority-number tasks)
         if self.consecutive_failures >= 3:
             # Keep only the top-priority tasks, max 2
             easy = tasks[:2]

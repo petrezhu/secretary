@@ -169,7 +169,6 @@ def empty_repo(tmp_path: Path) -> Repository:
     config = DataConfig(goals_db=goals_db, tasks_db=tasks_db)
     r = Repository(config)
     import asyncio
-
     loop = asyncio.new_event_loop()
     loop.run_until_complete(r.initialize())
     yield r
@@ -188,7 +187,6 @@ def healthy_repo(tmp_path: Path) -> Repository:
     config = DataConfig(goals_db=goals_db, tasks_db=tasks_db)
     r = Repository(config)
     import asyncio
-
     loop = asyncio.new_event_loop()
     loop.run_until_complete(r.initialize())
     yield r
@@ -209,7 +207,6 @@ def warning_repo(tmp_path: Path) -> Repository:
     config = DataConfig(goals_db=goals_db, tasks_db=tasks_db)
     r = Repository(config)
     import asyncio
-
     loop = asyncio.new_event_loop()
     loop.run_until_complete(r.initialize())
     yield r
@@ -230,7 +227,6 @@ def large_db_repo(tmp_path: Path) -> Repository:
     config = DataConfig(goals_db=goals_db, tasks_db=tasks_db)
     r = Repository(config)
     import asyncio
-
     loop = asyncio.new_event_loop()
     loop.run_until_complete(r.initialize())
     yield r
@@ -242,14 +238,10 @@ def large_db_repo(tmp_path: Path) -> Repository:
 def checker(tmp_path: Path) -> HealthChecker:
     """HealthChecker with a valid token file so new checks pass."""
     token_path = tmp_path / "dida365_token.json"
-    token_path.write_text(
-        json.dumps(
-            {
-                "access_token": "test_token",
-                "expires_at": (datetime.now() + timedelta(days=30)).isoformat(),
-            }
-        )
-    )
+    token_path.write_text(json.dumps({
+        "access_token": "test_token",
+        "expires_at": (datetime.now() + timedelta(days=30)).isoformat(),
+    }))
     return HealthChecker(config=MonitorConfig(), token_path=token_path)
 
 
@@ -350,7 +342,9 @@ class TestHealthCheckerCombined:
         assert "停滞超14天" in result.message
         assert "僵尸任务" in result.message
 
-    async def test_to_dict_serialization(self, warning_repo: Repository, checker: HealthChecker):
+    async def test_to_dict_serialization(
+        self, warning_repo: Repository, checker: HealthChecker
+    ):
         result = await checker.check(warning_repo)
         d = result.to_dict()
         assert "name" in d
@@ -369,14 +363,10 @@ class TestCheckerRegistryIntegration:
     async def test_register_and_run_all(self, healthy_repo: Repository, tmp_path: Path):
         registry = CheckerRegistry()
         token_path = tmp_path / "dida365_token.json"
-        token_path.write_text(
-            json.dumps(
-                {
-                    "access_token": "test",
-                    "expires_at": (datetime.now() + timedelta(days=30)).isoformat(),
-                }
-            )
-        )
+        token_path.write_text(json.dumps({
+            "access_token": "test",
+            "expires_at": (datetime.now() + timedelta(days=30)).isoformat(),
+        }))
         checker = HealthChecker(config=MonitorConfig(), token_path=token_path)
         registry.register(checker)
 
@@ -420,14 +410,10 @@ class TestTimezoneAwareExpiry:
         token_path = tmp_path / "dida365_token.json"
         # expires_at with explicit timezone
         exp = (datetime.now() + timedelta(days=30)).isoformat() + "+08:00"
-        token_path.write_text(
-            json.dumps(
-                {
-                    "access_token": "test",
-                    "expires_at": exp,
-                }
-            )
-        )
+        token_path.write_text(json.dumps({
+            "access_token": "test",
+            "expires_at": exp,
+        }))
         checker = HealthChecker(config=MonitorConfig(), token_path=token_path)
         result = await checker.check(healthy_repo)
         # Should not raise TypeError from naive/aware datetime subtraction
@@ -437,14 +423,10 @@ class TestTimezoneAwareExpiry:
         """Expired timezone-aware token should be detected."""
         token_path = tmp_path / "dida365_token.json"
         exp = (datetime.now() - timedelta(days=1)).isoformat() + "+08:00"
-        token_path.write_text(
-            json.dumps(
-                {
-                    "access_token": "test",
-                    "expires_at": exp,
-                }
-            )
-        )
+        token_path.write_text(json.dumps({
+            "access_token": "test",
+            "expires_at": exp,
+        }))
         checker = HealthChecker(config=MonitorConfig(), token_path=token_path)
         result = await checker.check(healthy_repo)
         assert result.status in ("warning", "critical")
@@ -454,14 +436,10 @@ class TestTimezoneAwareExpiry:
         """Naive (no timezone) token should still work as before."""
         token_path = tmp_path / "dida365_token.json"
         exp = (datetime.now() + timedelta(days=30)).isoformat()
-        token_path.write_text(
-            json.dumps(
-                {
-                    "access_token": "test",
-                    "expires_at": exp,
-                }
-            )
-        )
+        token_path.write_text(json.dumps({
+            "access_token": "test",
+            "expires_at": exp,
+        }))
         checker = HealthChecker(config=MonitorConfig(), token_path=token_path)
         result = await checker.check(healthy_repo)
         assert result.status == "ok"
@@ -470,16 +448,12 @@ class TestTimezoneAwareExpiry:
         """Token with epoch timestamp (int) should work."""
         token_path = tmp_path / "dida365_token.json"
         import time
-
         exp = int(time.time()) + 30 * 86400
-        token_path.write_text(
-            json.dumps(
-                {
-                    "access_token": "test",
-                    "expires_at": exp,
-                }
-            )
-        )
+        token_path.write_text(json.dumps({
+            "access_token": "test",
+            "expires_at": exp,
+        }))
         checker = HealthChecker(config=MonitorConfig(), token_path=token_path)
         result = await checker.check(healthy_repo)
         assert result.status == "ok"
+

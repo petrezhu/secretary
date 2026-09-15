@@ -14,6 +14,10 @@ secretary.gateway.intents (regex-only, no LLM, fail-open).
 Every handled message is appended to a JSONL ledger read by
 scripts/agent_context_bridge.py (a Hermes pre_llm_call shell hook) so the
 agent stays aware of what Secretary answered on its behalf.
+
+Additionally, every inbound message — regardless of outcome — is traced to
+a queries JSONL log (``queries.jsonl``) as the raw material for the
+ColdSkill sedimentation pipeline (candidate mining for repeated queries).
 """
 
 from __future__ import annotations
@@ -40,27 +44,54 @@ _registry = build_default_registry()
 _repo: Repository | None = None
 _config = None
 
-# Ledger of handled messages (consumed by agent_context_bridge hook)
-_DATA_DIR = os.environ.get("SECRETARY_DATA_DIR", "")
-_LEDGER_PATH = Path(
-    os.path.join(_DATA_DIR, "secretary_handled.jsonl")
-    if _DATA_DIR
-    else "/tmp/secretary_handled.jsonl"
-)
-_LEDGER_MAX_BYTES = 256 * 1024  # rotate when exceeded
+
+# ── Rotating JSONL writer (Duplicated Code fix: Q1 + Q6) ────────────────────
+
+
+class _RotatingJsonlWriter:
+    """Best-effort JSONL appender with automatic 256 KB rotation.
+
+    Both callers (``_record_handled`` and ``_record_query``) previously
+    duplicated identical rotation+append logic. This single class owns it.
+    Never raises — downstream callers are fail-open by design.
+    """
+
+    def __init__(self, path: Path, max_bytes: int = 256 * 1024) -> None:
+        self.path = path
+        self.max_bytes = max_bytes
+
+    def append(self, entry: dict) -> None:
+        try:
+            if self.path.exists() and self.path.stat().st_size > self.max_bytes:
+                self.path.unlink()
+            with open(self.path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
+
+
+def _data_path(name: str) -> Path:
+    """Resolve a data-file path from SECRETARY_DATA_DIR or /tmp fallback."""
+    data_dir = os.environ.get("SECRETARY_DATA_DIR", "")
+    return Path(os.path.join(data_dir, name)) if data_dir else Path(f"/tmp/{name}")
+
+
+_LEDGER = _RotatingJsonlWriter(_data_path("secretary_handled.jsonl"))
+_QUERIES = _RotatingJsonlWriter(_data_path("queries.jsonl"))
 
 
 def _record_handled(text: str, reply: str, intent: str) -> None:
     """Append a handled-message entry; best-effort, never raises."""
-    try:
-        if _LEDGER_PATH.exists() and _LEDGER_PATH.stat().st_size > _LEDGER_MAX_BYTES:
-            # crude rotation: keep it simple, drop the whole file
-            _LEDGER_PATH.unlink()
-        entry = {"ts": time.time(), "text": text[:80], "reply": reply[:80], "intent": intent}
-        with open(_LEDGER_PATH, "a", encoding="utf-8") as f:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-    except Exception:
-        pass
+    _LEDGER.append({"ts": time.time(), "text": text[:80], "reply": reply[:80], "intent": intent})
+
+
+def _record_query(text: str, outcome: str) -> None:
+    """Append an inbound-query trace entry; best-effort, never raises.
+
+    ``outcome`` is one of: "truncated" (over-long early return), the intent
+    handler name (high/medium hit), or "allow" (deferred to the agent).
+    """
+    _QUERIES.append({"ts": time.time(), "text": text[:80], "outcome": outcome})
 
 
 def set_repository(repo: Repository) -> None:
@@ -80,13 +111,11 @@ def set_config(config) -> None:
 
 class InboundRequest(BaseModel):
     """Message from Hermes plugin."""
-
     text: str = Field(..., min_length=1)
     user_id: str = "unknown"
     chat_id: str = "unknown"
     chat_type: str = "dm"
     platform: str = "qqbot"
-
 
 class InboundResponse(BaseModel):
     """Decision for Hermes."""
@@ -107,6 +136,7 @@ async def handle_inbound(req: InboundRequest) -> InboundResponse:
     # Skip very long messages (likely complex, let agent handle)
     if len(text) > 200:
         logger.debug("Long message (%d chars), deferring to agent", len(text))
+        _record_query(text, "truncated")
         return InboundResponse(action="allow")
 
     ctx = IntentContext(
@@ -120,11 +150,11 @@ async def handle_inbound(req: InboundRequest) -> InboundResponse:
 
     if confidence == "high" and reply:
         # HIGH: data available, reply immediately
+        _record_query(text, intent_name or "?")
         _record_handled(text, reply, intent_name or "?")
 
         # Split long replies into multiple messages
         from secretary.gateway.intents.base import split_reply
-
         chunks = split_reply(reply)
 
         if len(chunks) == 1:
@@ -136,22 +166,24 @@ async def handle_inbound(req: InboundRequest) -> InboundResponse:
         # MEDIUM: intent matched but data missing
         # Return preliminary reply, then async补答复 via Harness
         preliminary = "收到，我查一下稍后回复你。"
+        _record_query(text, intent_name)
         _record_handled(text, preliminary, f"{intent_name}(pending)")
 
         # Schedule async补答复
         import asyncio
-
-        asyncio.create_task(_async_supplement(text, intent_name, req.chat_id))
+        asyncio.create_task(
+            _async_supplement(text, intent_name, req.chat_id)
+        )
 
         return InboundResponse(action="handle", reply=preliminary)
 
     # LOW: no intent matched, let agent handle
     logger.debug("No intent matched, deferring to agent: %s", text[:60])
+    _record_query(text, "allow")
     return InboundResponse(action="allow")
 
 
 # ── Async supplement via Harness ─────────────────────────────────────────────
-
 
 async def _async_supplement(text: str, intent_name: str, chat_id: str) -> None:
     """Background task: call Harness to get a real answer and send it.
@@ -182,9 +214,8 @@ async def _async_supplement(text: str, intent_name: str, chat_id: str) -> None:
             )
             return
 
-        async with (
-            aiohttp.ClientSession() as session,
-            session.post(
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
                 f"{api_base}/chat/completions",
                 json={
                     "model": "deepseek-v4-flash",
@@ -194,32 +225,31 @@ async def _async_supplement(text: str, intent_name: str, chat_id: str) -> None:
                 },
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=aiohttp.ClientTimeout(total=30),
-            ) as resp,
-        ):
-            if resp.status == 200:
-                data = await resp.json()
-                answer = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                if answer:
-                    # Send via Secretary's own /api/send
-                    async with session.post(
-                        "http://127.0.0.1:8901/api/send",
-                        json={"text": answer, "channel": "qq", "target": chat_id},
-                        timeout=aiohttp.ClientTimeout(total=10),
-                    ) as send_resp:
-                        if send_resp.status == 200:
-                            logger.info(
-                                "[Harness] Async supplement sent for %s",
-                                intent_name,
-                            )
-                        else:
-                            logger.warning(
-                                "[Harness] Failed to send supplement: %d",
-                                send_resp.status,
-                            )
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    answer = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if answer:
+                        # Send via Secretary's own /api/send
+                        async with session.post(
+                            "http://127.0.0.1:8901/api/send",
+                            json={"text": answer, "channel": "qq", "target": chat_id},
+                            timeout=aiohttp.ClientTimeout(total=10),
+                        ) as send_resp:
+                            if send_resp.status == 200:
+                                logger.info(
+                                    "[Harness] Async supplement sent for %s",
+                                    intent_name,
+                                )
+                            else:
+                                logger.warning(
+                                    "[Harness] Failed to send supplement: %d",
+                                    send_resp.status,
+                                )
+                    else:
+                        logger.warning("[Harness] Empty response from CLIProxyAPI")
                 else:
-                    logger.warning("[Harness] Empty response from CLIProxyAPI")
-            else:
-                logger.warning("[Harness] CLIProxyAPI returned %d", resp.status)
+                    logger.warning("[Harness] CLIProxyAPI returned %d", resp.status)
 
     except Exception as e:
         logger.warning("[Harness] Async supplement failed for %s: %s", intent_name, str(e)[:100])

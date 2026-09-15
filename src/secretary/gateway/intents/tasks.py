@@ -103,14 +103,17 @@ class TaskDetailHandler:
         return (
             f"#{row['id']} [{row['status']}] 优先级{row['priority']}\n"
             f"{row['request_text']}\n"
-            f"创建: {row['created_at']}" + (f"\n备注: {row['notes']}" if row["notes"] else "")
+            f"创建: {row['created_at']}"
+            + (f"\n备注: {row['notes']}" if row["notes"] else "")
         )
 
 
 def _render_status(tasks, weekly) -> str:
     pending = [t for t in tasks if t.status == "pending"]
     in_progress = [t for t in tasks if t.status == "in_progress"]
-    active_weekly = [g for g in weekly if g.status in ("active", "in_progress")]
+    active_weekly = [
+        g for g in weekly if g.status in ("active", "in_progress")
+    ]
 
     lines = []
     if in_progress:

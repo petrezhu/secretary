@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -13,7 +13,6 @@ from secretary.config import DataConfig
 # ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
-
 
 @dataclass
 class Goal:
@@ -69,7 +68,6 @@ class SystemHealth:
 # Connection pool (simple single-connection per DB, WAL-optimised)
 # ---------------------------------------------------------------------------
 
-
 class _Pool:
     """Managed SQLite connection with WAL mode."""
 
@@ -97,8 +95,10 @@ class _Pool:
 
     def close(self) -> None:
         if self._conn is not None:
-            with suppress(Exception):
+            try:
                 self._conn.close()
+            except Exception:
+                pass
             self._conn = None
 
     @property
@@ -109,7 +109,6 @@ class _Pool:
 # ---------------------------------------------------------------------------
 # Row → model converters
 # ---------------------------------------------------------------------------
-
 
 def _row_to_goal(row: sqlite3.Row, goal_type: str) -> Goal:
     """Convert a sqlite3.Row to a Goal dataclass."""
@@ -157,7 +156,6 @@ def _row_to_task(row: sqlite3.Row) -> Task:
 # ---------------------------------------------------------------------------
 # Repository
 # ---------------------------------------------------------------------------
-
 
 class Repository:
     """Unified data repository with connection pooling (WAL mode).

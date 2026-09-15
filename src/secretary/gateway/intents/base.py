@@ -115,6 +115,7 @@ class IntentRegistry:
 
     def __init__(self) -> None:
         self._handlers: list[IntentHandler] = []
+        self._skill_loader: Any | None = None
 
     def register(self, handler: IntentHandler) -> None:
         self._handlers.append(handler)
@@ -141,6 +142,13 @@ class IntentRegistry:
         """
         text = ctx.text
         result: str | None = None
+        # ColdSkill hot-reload probe (lstat-level cost; no-op unless changed)
+        loader = getattr(self, "_skill_loader", None)
+        if loader is not None:
+            try:
+                loader.sync(self)
+            except Exception as exc:
+                logger.warning("ColdSkill sync failed: %s", exc)
         for handler in self._handlers:
             try:
                 kw = getattr(handler, "keywords", None)
@@ -150,8 +158,9 @@ class IntentRegistry:
                 if kw:
                     if not _exact_keywords(text, kw):
                         continue
-                elif has_patterns and not _matches(handler.patterns, text):
-                    continue
+                elif has_patterns:
+                    if not _matches(handler.patterns, text):
+                        continue
                 # else: fallback — always try
 
                 reply = await handler.handle(ctx)
@@ -162,5 +171,7 @@ class IntentRegistry:
                     return None, handler.name, "medium"
                 result = None
             except Exception as exc:
-                logger.warning("Intent '%s' failed for %r: %s", handler.name, text[:40], exc)
+                logger.warning(
+                    "Intent '%s' failed for %r: %s", handler.name, text[:40], exc
+                )
         return result, None, "low"

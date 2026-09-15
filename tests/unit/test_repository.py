@@ -15,7 +15,6 @@ from secretary.data.repository import Goal, Repository, Task
 # Helpers: create temp databases with real schema
 # ---------------------------------------------------------------------------
 
-
 def _create_goals_db(path: str) -> None:
     """Create a goals.db with the real schema."""
     conn = sqlite3.connect(path)
@@ -98,9 +97,7 @@ def _create_tasks_db(path: str) -> None:
     conn.close()
 
 
-def _seed_goals_db(
-    path: str, *, include_stuck: bool = False, include_zombie_weekly: bool = False
-) -> None:
+def _seed_goals_db(path: str, *, include_stuck: bool = False, include_zombie_weekly: bool = False) -> None:
     """Insert sample data into goals.db."""
     conn = sqlite3.connect(path)
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -198,7 +195,6 @@ def _seed_tasks_db(path: str, *, include_zombie: bool = False) -> None:
 # Fixtures
 # ---------------------------------------------------------------------------
 
-
 @pytest.fixture
 def tmp_goals_db(tmp_path: Path) -> str:
     """Path to a temporary goals.db with schema + seed data."""
@@ -245,7 +241,6 @@ async def seeded_repo(tmp_path: Path) -> Repository:
 # ---------------------------------------------------------------------------
 # Tests: lifecycle
 # ---------------------------------------------------------------------------
-
 
 class TestLifecycle:
     async def test_initialize_and_close(self, tmp_goals_db: str, tmp_tasks_db: str):
@@ -311,7 +306,6 @@ class TestLifecycle:
 # Tests: data models
 # ---------------------------------------------------------------------------
 
-
 class TestModels:
     def test_goal_defaults(self):
         g = Goal(id=1, title="test", status="pending", goal_type="weekly", created_at="")
@@ -336,7 +330,6 @@ class TestModels:
 # ---------------------------------------------------------------------------
 # Tests: query methods
 # ---------------------------------------------------------------------------
-
 
 class TestWeeklyGoals:
     async def test_get_weekly_goals_excludes_deleted(self, seeded_repo: Repository):

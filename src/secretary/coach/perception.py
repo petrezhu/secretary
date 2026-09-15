@@ -42,16 +42,7 @@ class PerceptionResult:
 _EMOTION_KEYWORDS: dict[Emotion, list[str]] = {
     Emotion.HAPPY: ["开心", "高兴", "太好了", "棒", "不错", "开心", "哈哈", "nice", "great"],
     Emotion.TIRED: ["累了", "疲惫", "好困", "不想动", "没力气", "乏了", "tired", "exhausted"],
-    Emotion.FRUSTRATED: [
-        "烦",
-        "崩溃",
-        "受不了",
-        "太难了",
-        "卡住了",
-        "frustrated",
-        "stuck",
-        "annoying",
-    ],
+    Emotion.FRUSTRATED: ["烦", "崩溃", "受不了", "太难了", "卡住了", "frustrated", "stuck", "annoying"],
     Emotion.ANXIOUS: ["焦虑", "担心", "害怕", "压力大", "来不及", "panic", "anxious", "worried"],
 }
 

@@ -15,7 +15,7 @@ class PricePosition:
     pe: float | None = None
     # Computed
     pct_from_high: float = 0.0  # negative = below high
-    pct_from_low: float = 0.0  # positive = above low
+    pct_from_low: float = 0.0   # positive = above low
     position_in_range: float = 0.0  # 0.0 = at low, 1.0 = at high
     interpretation: str = ""
 
@@ -200,12 +200,8 @@ def compute_decision(
     expected_return = sum(s.probability * s.expected_return_pct for s in scenarios)
 
     # Risk/reward ratio: avg upside / avg downside
-    upside = sum(
-        s.probability * s.expected_return_pct for s in scenarios if s.expected_return_pct > 0
-    )
-    downside = abs(
-        sum(s.probability * s.expected_return_pct for s in scenarios if s.expected_return_pct < 0)
-    )
+    upside = sum(s.probability * s.expected_return_pct for s in scenarios if s.expected_return_pct > 0)
+    downside = abs(sum(s.probability * s.expected_return_pct for s in scenarios if s.expected_return_pct < 0))
     risk_reward = upside / downside if downside > 0 else float("inf")
 
     # Current P&L
@@ -243,10 +239,7 @@ def _make_recommendation(
 
     # Reduce: near high with negative expected return
     if pos >= 0.8 and expected_return < 0:
-        return (
-            "reduce",
-            f"处于52周高位(pos={pos:.0%})，期望收益为负({expected_return:.1f}%)，建议减仓",
-        )
+        return "reduce", f"处于52周高位(pos={pos:.0%})，期望收益为负({expected_return:.1f}%)，建议减仓"
 
     # Reduce: high profit, take some off the table
     if pnl_pct >= 25 and pos >= 0.7:
@@ -254,20 +247,14 @@ def _make_recommendation(
 
     # Add: near low with positive expected return
     if pos <= 0.3 and expected_return > 2.0:
-        return (
-            "add",
-            f"处于52周低位(pos={pos:.0%})，期望收益为正({expected_return:.1f}%)，可考虑加仓",
-        )
+        return "add", f"处于52周低位(pos={pos:.0%})，期望收益为正({expected_return:.1f}%)，可考虑加仓"
 
     # Add: good risk/reward
     if risk_reward >= 2.0 and expected_return > 3.0:
         return "add", f"风险收益比良好({risk_reward:.1f})，期望收益{expected_return:.1f}%，可加仓"
 
     # Default: hold
-    return (
-        "hold",
-        f"当前位置({pos:.0%})和期望收益({expected_return:.1f}%)不支持明确的加减仓信号，建议持有观望",
-    )
+    return "hold", f"当前位置({pos:.0%})和期望收益({expected_return:.1f}%)不支持明确的加减仓信号，建议持有观望"
 
 
 def format_decision_report(analysis: DecisionAnalysis) -> str:
@@ -286,28 +273,22 @@ def format_decision_report(analysis: DecisionAnalysis) -> str:
         "── 价格位置 ──",
         analysis.position.interpretation,
         f"52周区间位置: {analysis.position.position_in_range:.0%} (0%=最低, 100%=最高)",
-        f"距高点: {analysis.position.pct_from_high:+.1f}%"
-        f"  距低点: {analysis.position.pct_from_low:+.1f}%",
+        f"距高点: {analysis.position.pct_from_high:+.1f}%  距低点: {analysis.position.pct_from_low:+.1f}%",
         "",
         "── 情景分析 ──",
     ]
 
     for s in analysis.scenarios:
-        lines.append(
-            f"  {s.name}: {s.probability:.0%}概率, 预期{s.expected_return_pct:+.1f}%"
-            f"  ({s.reasoning})"
-        )
+        lines.append(f"  {s.name}: {s.probability:.0%}概率, 预期{s.expected_return_pct:+.1f}%  ({s.reasoning})")
 
-    lines.extend(
-        [
-            "",
-            f"期望收益: {analysis.expected_return:+.2f}%",
-            f"风险收益比: {analysis.risk_reward_ratio:.2f}",
-            "",
-            "── 决策建议 ──",
-            f"{rec_map.get(analysis.recommendation, analysis.recommendation)}",
-            analysis.reasoning,
-        ]
-    )
+    lines.extend([
+        "",
+        f"期望收益: {analysis.expected_return:+.2f}%",
+        f"风险收益比: {analysis.risk_reward_ratio:.2f}",
+        "",
+        "── 决策建议 ──",
+        f"{rec_map.get(analysis.recommendation, analysis.recommendation)}",
+        analysis.reasoning,
+    ])
 
     return "\n".join(lines)

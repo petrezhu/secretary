@@ -10,51 +10,27 @@ from secretary.gateway.intents.base import IntentContext
 
 # ── Exact keywords (no regex, no substring match) ────────────────────────
 _PORTFOLIO_KW = {
-    "持仓",
-    "查持仓",
-    "看看持仓",
-    "查一下持仓",
-    "看一下持仓",
-    "持仓情况",
-    "持仓怎么样",
-    "持仓如何",
-    "市值",
-    "市值多少",
-    "市值怎么样",
-    "市值如何",
-    "盈亏",
-    "盈亏多少",
-    "盈亏怎么样",
-    "盈亏如何",
-    "收益",
-    "收益多少",
-    "收益怎么样",
-    "账户",
-    "账户怎么样",
-    "账户情况",
-    "账户多少",
-    "我的股票",
-    "我的基金",
-    "今天赚了多少",
-    "今天亏了多少",
-    "今天赚了",
-    "今天亏了",
+    "持仓", "查持仓", "看看持仓", "查一下持仓", "看一下持仓",
+    "持仓情况", "持仓怎么样", "持仓如何",
+    "市值", "市值多少", "市值怎么样", "市值如何",
+    "盈亏", "盈亏多少", "盈亏怎么样", "盈亏如何",
+    "收益", "收益多少", "收益怎么样",
+    "账户", "账户怎么样", "账户情况", "账户多少",
+    "我的股票", "我的基金",
+    "今天赚了多少", "今天亏了多少", "今天赚了", "今天亏了",
 }
 
 _MARKET_KW = {
-    "大盘",
-    "行情",
-    "沪深300",
-    "沪深 300",
-    "上证指数",
-    "创业板指",
-    "创业板",
-    "指数怎么样",
-    "指数如何",
-    "指数",
+    "大盘", "行情", "沪深300", "沪深 300", "上证指数",
+    "创业板指", "创业板", "指数怎么样", "指数如何", "指数",
 }
 
 _QDII_KW = {"qdii", "QDII", "溢价", "套利"}
+
+_GOLD_KW = {
+    "金价", "黄金", "黄金价格", "黄金多少钱", "金价多少", "金价怎么样",
+    "黄金怎么样", "金价如何", "金价9999", "Au9999", "au9999",
+}
 
 
 def _load_portfolio(path: str | Path) -> dict:
@@ -146,7 +122,6 @@ class QdiiHandler:
     async def handle(self, ctx: IntentContext) -> str | None:
         """Fetch QDII premium/discount analysis for user's holdings."""
         import logging
-
         logger = logging.getLogger(__name__)
 
         try:
@@ -201,4 +176,78 @@ class QdiiHandler:
             return None
 
 
-HANDLERS = [PortfolioHandler(), MarketHandler(), QdiiHandler()]
+def _fetch_gold_quotes() -> dict[str, dict] | None:
+    """Fetch SGE Au(T+D) + COMEX gold via Sina hq (GBK).
+
+    Returns {"autd": {...}, "comex": {...}} — missing keys on failure.
+    Note: 国内金价锚点 = 上海金交所 Au(T+D) 元/克，不是 COMEX 美元/盎司折算
+    （汇率波动会让折算价显著偏离国内实价，2026-09-15 用户纠正过）。
+    """
+    try:
+        import requests
+
+        resp = requests.get(
+            "https://hq.sinajs.cn/list=gds_AUTD,hf_GC",
+            headers={"Referer": "https://finance.sina.com.cn"},
+            timeout=5,
+        )
+        resp.encoding = "gbk"
+        out: dict[str, dict] = {}
+        for line in resp.text.splitlines():
+            if "gds_AUTD" in line:
+                parts = line.split('"')[1].split(",") if '"' in line else []
+                if len(parts) > 13 and parts[0]:
+                    # 0=最新价 5=昨收 6=时间 8=昨收结算 13=名称
+                    prev = float(parts[5] or 0) or None
+                    price = float(parts[0])
+                    chg = ((price - prev) / prev * 100) if prev else None
+                    out["autd"] = {
+                        "price": price, "name": "上金所Au(T+D)",
+                        "change_pct": chg, "time": parts[6],
+                    }
+            elif "hf_GC" in line:
+                parts = line.split('"')[1].split(",") if '"' in line else []
+                if len(parts) > 8 and parts[0]:
+                    price = float(parts[0])
+                    prev_close = float(parts[7] or 0) or None
+                    chg = ((price - prev_close) / prev_close * 100) if prev_close else None
+                    out["comex"] = {
+                        "price": price, "name": "COMEX黄金(美元/盎司)",
+                        "change_pct": chg,
+                    }
+        return out or None
+    except Exception:
+        return None
+
+
+class GoldHandler:
+    name = "gold"
+    keywords = _GOLD_KW
+
+    def __init__(self):
+        self.patterns = []
+
+    async def handle(self, ctx: IntentContext) -> str | None:
+        import asyncio
+
+        loop = asyncio.get_running_loop()
+        quotes = await loop.run_in_executor(None, _fetch_gold_quotes)
+        if not quotes or "autd" not in quotes:
+            return None  # fail-open to Agent
+
+        autd = quotes["autd"]
+        chg = autd.get("change_pct")
+        emoji = "🔴" if (chg or 0) >= 0 else "🟢"
+        lines = [f"🥇 国内金价："]
+        chg_s = f" ({chg:+.2f}%)" if chg is not None else ""
+        lines.append(f"  {emoji} {autd['name']} {autd['price']:.2f} 元/克{chg_s}")
+        if "comex" in quotes:
+            cx = quotes["comex"]
+            cchg = cx.get("change_pct")
+            cemoji = "🔴" if (cchg or 0) >= 0 else "🟢"
+            cchg_s = f" ({cchg:+.2f}%)" if cchg is not None else ""
+            lines.append(f"  {cemoji} {cx['name']} {cx['price']:.2f}{cchg_s}")
+        return "\n".join(lines)
+
+
+HANDLERS = [PortfolioHandler(), MarketHandler(), QdiiHandler(), GoldHandler()]

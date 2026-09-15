@@ -5,16 +5,25 @@ Usage (from inbound.py):
     from secretary.gateway.intents import build_default_registry
 
     registry = build_default_registry()
-    ctx = IntentContext(text=..., repo=..., config=...)
-    reply, intent, confidence = await registry.dispatch(ctx)
+    reply, intent, confidence = await registry.dispatch(IntentContext(text=..., repo=..., config=...))
 """
 
 from __future__ import annotations
 
-from secretary.gateway.intents import goals, greetings, memory, misc, system, systems, tasks, wealth
 from secretary.gateway.intents.base import (
     IntentContext,
     IntentRegistry,
+)
+from secretary.gateway.intents import (
+    coldskills,
+    goals,
+    greetings,
+    memory,
+    misc,
+    system,
+    systems,
+    tasks,
+    wealth,
 )
 
 
@@ -44,8 +53,19 @@ def build_default_registry() -> IntentRegistry:
         registry.register(handler)
     for handler in memory.HANDLERS:
         registry.register(handler)
+    # ColdSkill adoption controls (建议/采纳/技能列表/撤销) — before fallback
+    for handler in coldskills.HANDLERS:
+        registry.register(handler)
     # Fallbacks last
     registry.register(misc.EmotionHandler())
+
+    # ColdSkill layer — skills insert themselves before the fallback, so
+    # core intents always win. Fail-open if the repo is missing.
+    from secretary.gateway.coldskill import get_skill_loader
+
+    registry._skill_loader = get_skill_loader()
+    registry._skill_loader.sync(registry)
+
     return registry
 
 

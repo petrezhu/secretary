@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Awaitable, Callable
 
 from secretary.engine.repairer import AutoRepairer
 from secretary.monitor import CheckResult
@@ -75,7 +74,7 @@ class Scheduler:
         self._running = False
         self._tick_count = 0
         self._notify_cooldown: dict[str, datetime] = {}
-        self._notify_cooldown_seconds: int = 3600  # 1 hour default
+        self._notify_cooldown_seconds: int = 10800  # 3 hours — reduce persistent-condition spam
 
     # ── Job management ────────────────────────────────────────────────
 

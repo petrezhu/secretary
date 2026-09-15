@@ -125,7 +125,7 @@ class AuditLog:
         if not self._path.exists():
             return 1
         max_id = 0
-        with open(self._path, encoding="utf-8") as f:
+        with open(self._path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:
@@ -142,7 +142,7 @@ class AuditLog:
         if not self._path.exists():
             return []
         entries: list[AuditEntry] = []
-        with open(self._path, encoding="utf-8") as f:
+        with open(self._path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line:

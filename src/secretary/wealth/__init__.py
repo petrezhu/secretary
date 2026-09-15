@@ -1,5 +1,4 @@
 """Wealth engine — portfolio tracking, national team signal, and market monitoring."""
-
 from __future__ import annotations
 
 from secretary.wealth.decision import (

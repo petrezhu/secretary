@@ -48,7 +48,6 @@ class RepairActionType(str, Enum):
     DISK_CLEANUP = "disk_full"
     CRON_RESET = "cron_stuck"
 
-
 # ── Whitelisted auto-repair anomaly types ────────────────────────────────────
 
 AUTO_REPAIR_TYPES: set[RepairActionType] = {
@@ -99,8 +98,13 @@ def _detect_anomaly_type(result: CheckResult) -> RepairActionType | None:
     if "disk" in name or "磁盘" in msg or "disk_full" in msg:
         return RepairActionType.DISK_CLEANUP
 
-    # Cron stuck
-    if "cron" in name or "定时" in msg or "stuck" in msg or "停滞" in msg:
+    # Cron stuck — real cron signals only. Generic "stuck"/"停滞" were
+    # removed: the health checker's "N个目标停滞超14天" (stuck GOALS)
+    # matched them, producing a fake CRON_RESET whose repair only wrote an
+    # in-memory timestamp. The before/after notification pair then re-fired
+    # every tick — the 5-minute "定时任务health卡住了/已重置" spam loop
+    # (Sep 2026, systemd restart counter >13k).
+    if "cron" in name or "定时" in msg:
         return RepairActionType.CRON_RESET
 
     return None
@@ -120,9 +124,7 @@ def _extract_target(result: CheckResult, anomaly_type: RepairActionType) -> str:
         return details.get("service", result.name.replace("_service", "").replace("service_", ""))
 
     if anomaly_type == RepairActionType.DOCKER_RESTART:
-        return details.get(
-            "container", result.name.replace("_container", "").replace("container_", "")
-        )
+        return details.get("container", result.name.replace("_container", "").replace("container_", ""))
 
     if anomaly_type == RepairActionType.DISK_CLEANUP:
         return details.get("path", "/")
@@ -329,10 +331,7 @@ class AutoRepairer:
 
         def _run() -> None:
             # 1. Clean old log files (>7 days)
-            log_dirs = [
-                Path("/var/log"),
-                Path(target).parent if Path(target).is_file() else Path(target),
-            ]
+            log_dirs = [Path("/var/log"), Path(target).parent if Path(target).is_file() else Path(target)]
             skip_prefixes = ("/proc", "/sys", "/dev")
             for log_dir in log_dirs:
                 if not log_dir.exists():
@@ -344,11 +343,7 @@ class AutoRepairer:
                         try:
                             if f.is_symlink():
                                 continue
-                            if (
-                                f.is_file()
-                                and not str(f).startswith(skip_prefixes)
-                                and (now - f.stat().st_mtime) > seven_days
-                            ):
+                            if f.is_file() and not str(f).startswith(skip_prefixes) and (now - f.stat().st_mtime) > seven_days:
                                 f.unlink()
                                 cleaned.append(str(f))
                         except OSError:
@@ -358,11 +353,7 @@ class AutoRepairer:
                         try:
                             if f.is_symlink():
                                 continue
-                            if (
-                                f.is_file()
-                                and not str(f).startswith(skip_prefixes)
-                                and (now - f.stat().st_mtime) > seven_days
-                            ):
+                            if f.is_file() and not str(f).startswith(skip_prefixes) and (now - f.stat().st_mtime) > seven_days:
                                 f.unlink()
                                 cleaned.append(str(f))
                         except OSError:

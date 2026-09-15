@@ -37,51 +37,47 @@ DEFAULT_COOKIE_PATH = Path.home() / ".secretary" / "eastmoney_cookies.json"
 @dataclass
 class AccountAssets:
     """账户资产总览。"""
-
-    total_assets: float = 0.0  # 总资产
-    market_value: float = 0.0  # 证券市值
-    available_cash: float = 0.0  # 可用资金
-    frozen_cash: float = 0.0  # 冻结资金
-    profit_today: float = 0.0  # 当日盈亏
-    profit_total: float = 0.0  # 持仓盈亏
+    total_assets: float = 0.0        # 总资产
+    market_value: float = 0.0        # 证券市值
+    available_cash: float = 0.0      # 可用资金
+    frozen_cash: float = 0.0         # 冻结资金
+    profit_today: float = 0.0        # 当日盈亏
+    profit_total: float = 0.0        # 持仓盈亏
     timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass
 class AccountHolding:
     """单只持仓。"""
-
-    code: str  # 股票代码 (如 "601398")
-    name: str  # 股票名称
-    shares: int  # 持仓数量
-    available_shares: int  # 可卖数量
-    cost_price: float  # 成本价
-    current_price: float  # 现价
-    market_value: float  # 市值
-    profit: float  # 盈亏金额
-    profit_pct: float  # 盈亏比例 %
-    buy_date: str = ""  # 买入日期 (如能获取)
+    code: str                  # 股票代码 (如 "601398")
+    name: str                  # 股票名称
+    shares: int                # 持仓数量
+    available_shares: int      # 可卖数量
+    cost_price: float          # 成本价
+    current_price: float       # 现价
+    market_value: float        # 市值
+    profit: float              # 盈亏金额
+    profit_pct: float          # 盈亏比例 %
+    buy_date: str = ""         # 买入日期 (如能获取)
 
 
 @dataclass
 class TradeRecord:
     """成交记录。"""
-
-    date: str  # 成交日期 YYYY-MM-DD
-    time: str  # 成交时间 HH:MM:SS
-    code: str  # 股票代码
-    name: str  # 股票名称
-    action: str  # "buy" / "sell"
-    price: float  # 成交价
-    shares: int  # 成交数量
-    amount: float  # 成交金额
-    fee: float = 0.0  # 手续费
+    date: str                  # 成交日期 YYYY-MM-DD
+    time: str                  # 成交时间 HH:MM:SS
+    code: str                  # 股票代码
+    name: str                  # 股票名称
+    action: str                # "buy" / "sell"
+    price: float               # 成交价
+    shares: int                # 成交数量
+    amount: float              # 成交金额
+    fee: float = 0.0           # 手续费
 
 
 @dataclass
 class SyncResult:
     """同步结果。"""
-
     assets: AccountAssets | None = None
     holdings: list[AccountHolding] = field(default_factory=list)
     trades: list[TradeRecord] = field(default_factory=list)
@@ -91,7 +87,6 @@ class SyncResult:
 
 
 # ── Cookie 管理 ──────────────────────────────────────────────────────────────
-
 
 def save_cookies(
     cookies: list[dict],
@@ -134,7 +129,6 @@ def is_cookie_fresh(path: Path | None = None, max_age_hours: int = 4) -> bool:
 
 # ── Playwright 登录 ──────────────────────────────────────────────────────────
 
-
 async def login_with_playwright(
     headless: bool = False,
     cookie_path: Path | None = None,
@@ -153,11 +147,7 @@ async def login_with_playwright(
     try:
         from playwright.async_api import async_playwright
     except ImportError:
-        return {
-            "success": False,
-            "cookies": [],
-            "error": "playwright not installed. Run: pip install playwright && playwright install chromium",  # noqa: E501,
-        }
+        return {"success": False, "cookies": [], "error": "playwright not installed. Run: pip install playwright && playwright install chromium"}
 
     cookie_path = cookie_path or DEFAULT_COOKIE_PATH
 
@@ -168,7 +158,7 @@ async def login_with_playwright(
         )
         context = await browser.new_context(
             viewport={"width": 1280, "height": 800},
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",  # noqa: E501,
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         )
         page = await context.new_page()
 
@@ -277,7 +267,6 @@ async def refresh_session_with_playwright(
 
 # ── REST API 抓取（用 cookies）──────────────────────────────────────────────
 
-
 async def _api_request(
     url: str,
     cookies: list[dict],
@@ -299,15 +288,13 @@ async def _api_request(
     try:
         async with aiohttp.ClientSession(cookies=cookie_dict) as session:
             if method == "POST":
-                async with session.post(
-                    url, data=data, headers=headers, timeout=aiohttp.ClientTimeout(total=15)
-                ) as resp:
+                async with session.post(url, data=data, headers=headers,
+                                       timeout=aiohttp.ClientTimeout(total=15)) as resp:
                     if resp.status == 200:
                         return await resp.json(content_type=None)
             else:
-                async with session.get(
-                    url, headers=headers, timeout=aiohttp.ClientTimeout(total=15)
-                ) as resp:
+                async with session.get(url, headers=headers,
+                                      timeout=aiohttp.ClientTimeout(total=15)) as resp:
                     if resp.status == 200:
                         return await resp.json(content_type=None)
     except Exception as e:
@@ -336,9 +323,7 @@ def _parse_holding(item: dict) -> AccountHolding | None:
             code=code,
             name=name,
             shares=int(float(item.get("Zqsl", item.get("zqsl", item.get("stockAmount", 0))))),
-            available_shares=int(
-                float(item.get("Kysl", item.get("kysl", item.get("availableAmount", 0))))
-            ),
+            available_shares=int(float(item.get("Kysl", item.get("kysl", item.get("availableAmount", 0))))),
             cost_price=float(item.get("Cbjg", item.get("cbjg", item.get("costPrice", 0)))),
             current_price=float(item.get("Zxjg", item.get("zxjg", item.get("currentPrice", 0)))),
             market_value=float(item.get("Zxsz", item.get("zxsz", item.get("marketValue", 0)))),
@@ -437,7 +422,6 @@ async def fetch_trade_history(
         end_date = datetime.now().strftime("%Y-%m-%d")
     if not start_date:
         from datetime import timedelta
-
         start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
 
     data = {
@@ -464,7 +448,6 @@ async def fetch_trade_history(
 
 
 # ── 同步到 portfolio.json ───────────────────────────────────────────────────
-
 
 def _market_code(code: str) -> str:
     """将纯数字代码转换为带市场前缀的代码 (sh/sz)。"""
@@ -498,12 +481,7 @@ def sync_to_portfolio(
     if portfolio_path.exists():
         portfolio = json.loads(portfolio_path.read_text())
     else:
-        portfolio = {
-            "holdings": [],
-            "cash": {"total": 0},
-            "closed_positions": [],
-            "pending_actions": [],
-        }
+        portfolio = {"holdings": [], "cash": {"total": 0}, "closed_positions": [], "pending_actions": []}
 
     existing_holdings = {h.get("code", ""): h for h in portfolio.get("holdings", [])}
     em_holdings = {_market_code(h.code): h for h in holdings}
@@ -547,14 +525,9 @@ def sync_to_portfolio(
         if code not in em_holdings and old.get("type") in ("stock", "etf"):
             # 可能是手动卖出或不在东方财富账户里
             if old.get("shares", 0) > 0:
-                changes["removed"].append(
-                    f"{old.get('name', code)}: {old.get('shares', 0)}股 → 东方财富已无持仓"
-                )
+                changes["removed"].append(f"{old.get('name', code)}: {old.get('shares', 0)}股 → 东方财富已无持仓")
                 old["shares"] = 0
-                old["note"] = (
-                    old.get("note", "")
-                    + f" | 东方财富同步: 已清仓 {datetime.now().strftime('%Y-%m-%d')}"
-                )
+                old["note"] = old.get("note", "") + f" | 东方财富同步: 已清仓 {datetime.now().strftime('%Y-%m-%d')}"
 
     # 更新现金
     if assets and assets.available_cash > 0:
@@ -573,12 +546,7 @@ def sync_to_portfolio(
             if code in trades_by_code:
                 existing_txns = holding.get("transactions", [])
                 existing_keys = {
-                    (
-                        t.get("date", ""),
-                        t.get("action", ""),
-                        str(t.get("shares", "")),
-                        str(t.get("price", "")),
-                    )
+                    (t.get("date", ""), t.get("action", ""), str(t.get("shares", "")), str(t.get("price", "")))
                     for t in existing_txns
                 }
 
@@ -609,7 +577,6 @@ def sync_to_portfolio(
 
 # ── 完整同步流程 ─────────────────────────────────────────────────────────────
 
-
 async def full_sync(
     portfolio_path: str | Path,
     cookie_path: Path | None = None,
@@ -639,15 +606,12 @@ async def full_sync(
         assets, holdings = await fetch_holdings(cookies)
 
         if not holdings and not assets:
-            return SyncResult(
-                error="Failed to fetch holdings. Cookies may be invalid.", cookie_valid=False
-            )
+            return SyncResult(error="Failed to fetch holdings. Cookies may be invalid.", cookie_valid=False)
 
         # 拉取成交记录
         trades = []
         if fetch_trades:
             from datetime import timedelta
-
             start = (datetime.now() - timedelta(days=trade_days)).strftime("%Y-%m-%d")
             trades = await fetch_trade_history(cookies, start_date=start)
 
@@ -666,7 +630,6 @@ async def full_sync(
 
 
 # ── 格式化输出 ──────────────────────────────────────────────────────────────
-
 
 def format_sync_report(result: SyncResult, changes: dict | None = None) -> str:
     """格式化同步报告。"""
@@ -696,7 +659,9 @@ def format_sync_report(result: SyncResult, changes: dict | None = None) -> str:
         lines.append(f"成交记录 (近30天 {len(result.trades)} 笔):")
         for t in result.trades[-10:]:  # 只显示最近10笔
             emoji = "🟢" if t.action == "sell" else "🔵"
-            lines.append(f"  {emoji} {t.date} {t.name} {t.action} {t.shares}股 @¥{t.price:.2f}")
+            lines.append(
+                f"  {emoji} {t.date} {t.name} {t.action} {t.shares}股 @¥{t.price:.2f}"
+            )
         lines.append("")
 
     if changes:

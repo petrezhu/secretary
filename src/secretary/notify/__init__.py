@@ -57,6 +57,7 @@ class NotifyAdapter(Protocol):
 # ── Conversation-style formatter ─────────────────────────────────────────────
 
 
+
 def _get_user_name() -> str:
     """Read user name from env at call time (testable with monkeypatch)."""
     return os.environ.get("SECRETARY_USER_NAME", "主人")
@@ -121,8 +122,7 @@ class HermesQQAdapter:
         try:
             if self.use_cli:
                 proc = await asyncio.create_subprocess_exec(
-                    "hermes",
-                    "status",
+                    "hermes", "status",
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                 )
@@ -130,13 +130,11 @@ class HermesQQAdapter:
                 return proc.returncode == 0
             import aiohttp
 
-            async with (
-                aiohttp.ClientSession() as session,
-                session.get(
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
                     f"{self.gateway_url}/health", timeout=aiohttp.ClientTimeout(total=5)
-                ) as resp,
-            ):
-                return resp.status == 200
+                ) as resp:
+                    return resp.status == 200
         except Exception:
             return False
 
@@ -146,27 +144,21 @@ class HermesQQAdapter:
 
         url = f"{self.gateway_url}/api/send"
         payload = {"text": text, "target": target, "channel": "qq"}
-        async with (
-            aiohttp.ClientSession() as session,
-            session.post(
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
                 url,
                 json=payload,
                 timeout=aiohttp.ClientTimeout(total=30),
-            ) as resp,
-        ):
-            if resp.status == 200:
-                return SendResult(success=True, channel="qq")
-            body = await resp.text()
-            return SendResult(success=False, channel="qq", error=f"HTTP {resp.status}: {body}")
+            ) as resp:
+                if resp.status == 200:
+                    return SendResult(success=True, channel="qq")
+                body = await resp.text()
+                return SendResult(success=False, channel="qq", error=f"HTTP {resp.status}: {body}")
 
     async def _send_via_cli(self, text: str, target: str) -> SendResult:
         """Send via `hermes send` CLI subprocess."""
         proc = await asyncio.create_subprocess_exec(
-            "hermes",
-            "send",
-            "--to",
-            target,
-            text,
+            "hermes", "send", "--to", target, text,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -265,9 +257,9 @@ class Dispatcher:
         }
         # Rate limits: max per hour
         self._rate_limits = {
-            "warning": 5,  # WARNING: 5条/小时
+            "warning": 5,   # WARNING: 5条/小时
             "critical": 999,  # CRITICAL: 无限制（立即推送）
-            "info": 3,  # INFO: 3条/小时（早安+晚间+其他）
+            "info": 3,       # INFO: 3条/小时（早安+晚间+其他）
         }
 
     def register_adapter(self, name: str, adapter: NotifyAdapter) -> None:
@@ -280,13 +272,14 @@ class Dispatcher:
         Returns True if allowed, False if rate limited.
         """
         import time
-
         now = time.time()
         hour_ago = now - 3600
 
         # Clean old entries
         if level in self._send_times:
-            self._send_times[level] = [t for t in self._send_times[level] if t > hour_ago]
+            self._send_times[level] = [
+                t for t in self._send_times[level] if t > hour_ago
+            ]
         else:
             self._send_times[level] = []
 

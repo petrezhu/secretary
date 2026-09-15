@@ -50,7 +50,6 @@ class TestStaleLogFiles:
         # Set mtime to 2 days ago
         old_time = (datetime.now() - timedelta(days=2)).timestamp()
         import os
-
         os.utime(stale_log, (old_time, old_time))
 
         # Only configure one job pointing to the stale log
@@ -94,7 +93,6 @@ class TestMixedScenario:
         stale_log.write_text("old content")
         old_time = (datetime.now() - timedelta(days=2)).timestamp()
         import os
-
         os.utime(stale_log, (old_time, old_time))
 
         checker._jobs = [

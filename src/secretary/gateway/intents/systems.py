@@ -16,14 +16,8 @@ _LOCAL_FILE = _SYSTEMS_FILE.parent / "local.json"
 
 # Keywords to trigger system lookup
 _SYSTEMS_KW = {
-    "系统列表",
-    "自持系统",
-    "系统在哪",
-    "系统状态",
-    "服务列表",
-    "服务在哪",
-    "有哪些系统",
-    "有哪些服务",
+    "系统列表", "自持系统", "系统在哪", "系统状态",
+    "服务列表", "服务在哪", "有哪些系统", "有哪些服务",
 }
 
 

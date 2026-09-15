@@ -75,7 +75,9 @@ class DeadmanChecker:
 
             if age > max_age:
                 age_hours = age.total_seconds() / 3600
-                issues.append(f"{name}: 已{age_hours:.1f}小时未更新")
+                issues.append(
+                    f"{name}: 已{age_hours:.1f}小时未更新"
+                )
                 details[name] = {
                     "status": "stale",
                     "last_modified": mtime.isoformat(),

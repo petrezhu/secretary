@@ -7,28 +7,15 @@ import os
 from secretary.gateway.intents.base import IntentContext
 
 _GREETING_KW = {
-    "你好",
-    "hi",
-    "hello",
-    "hey",
-    "早",
-    "早上好",
-    "早安",
-    "晚安",
-    "在吗",
-    "在不在",
-    "喂",
-    "嗨",
-    "哈喽",
-    "yo",
-    "sup",
-    "下午好",
-    "晚上好",
+    "你好", "hi", "hello", "hey", "早", "早上好", "早安", "晚安",
+    "在吗", "在不在", "喂", "嗨", "哈喽", "yo", "sup",
+    "下午好", "晚上好",
 }
 
 _THANKS_KW = {"谢谢", "感谢", "thanks", "thank you", "thx", "3q", "3Q", "辛苦了"}
 
 _PRAISE_KW = {"不错", "厉害", "牛", "棒", "好样的", "干得好", "good", "nice", "great", "awesome"}
+
 
 
 class GreetingHandler:

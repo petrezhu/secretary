@@ -22,15 +22,8 @@ EASTMONEY_ANN_URL = "https://np-anotice-stock.eastmoney.com/api/security/ann"
 CNINFO_SEARCH_URL = "http://www.cninfo.com.cn/new/hisAnnouncement/query"
 
 KEYWORDS = [
-    "收购",
-    "重组",
-    "发行股份",
-    "复牌",
-    "减持",
-    "增持",
-    "分红",
-    "业绩预告",
-    "可转债",
+    "收购", "重组", "发行股份", "复牌",
+    "减持", "增持", "分红", "业绩预告", "可转债",
 ]
 
 
@@ -79,8 +72,7 @@ def parse_eastmoney_response(data: dict[str, Any]) -> list[Announcement]:
     """Parse eastmoney announcement API response into Announcement objects.
 
     Expected response structure:
-    {"data": {"list": [{"art_code": "...", "title": "...",
-      "notice_date": "...", "url": "...", ...}]}}
+    {"data": {"list": [{"art_code": "...", "title": "...", "notice_date": "2024-01-01 00:00:00", "url": "...", ...}]}}
     """
     announcements: list[Announcement] = []
     data_inner = data.get("data") or {}

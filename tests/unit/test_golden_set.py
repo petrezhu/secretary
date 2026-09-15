@@ -51,6 +51,9 @@ GOLDEN_SET = [
     ("请用持仓顾问skill分析下持仓", None),  # exact match only
     ("[Voice] 今天持仓。合计收益是怎么样的？", None),  # exact match only
     ("大盘怎么样", None),  # exact match only, "大盘" is the keyword
+    ("金价", "gold"),
+    ("今天黄金的最新价格", None),  # exact match only — agent handles sentences
+    ("黄金", "gold"),  # single-word trigger in keyword set
     # ── system ────────────────────────────────────────────────────────
     ("服务器", "system_health"),
     ("服务器状态", None),  # exact match only, "服务器" is the keyword
@@ -58,6 +61,11 @@ GOLDEN_SET = [
     # ── help ──────────────────────────────────────────────────────────
     ("帮助", "help"),
     ("有什么指令", "help"),
+    # ── coldskill adoption controls ─────────────────────────────────
+    ("建议", "coldskill_suggest"),
+    ("技能列表", "coldskill_list"),
+    ("采纳建议#1 答复：外星球投资是一种另类资产", "coldskill_adopt"),
+    ("撤销技能 faq_abc123", "coldskill_revoke"),
     # ── complex → must NOT be claimed by any patterned intent ────────
     ("调查一下方案C是否可行", None),
     ("用SVG画：你坐在高山草甸上看着对面的雪山", None),
@@ -97,9 +105,13 @@ def test_golden_message_routing(text, expected):
     registry = build_default_registry()
     claimed = _find_claimed(registry, text)
     if expected is None:
-        assert claimed is None, f"{text!r}: 期望放行 Agent，但被意图 '{claimed}' 认领"
+        assert claimed is None, (
+            f"{text!r}: 期望放行 Agent，但被意图 '{claimed}' 认领"
+        )
     else:
-        assert claimed == expected, f"{text!r}: 期望意图 '{expected}'，实际被 '{claimed}' 认领"
+        assert claimed == expected, (
+            f"{text!r}: 期望意图 '{expected}'，实际被 '{claimed}' 认领"
+        )
 
 
 def test_golden_set_stats():

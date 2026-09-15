@@ -12,7 +12,6 @@ import yaml
 # Auto-load .env from project root (silently skip if python-dotenv not installed)
 try:
     from dotenv import load_dotenv
-
     _PROJECT_ROOT = Path(__file__).parent.parent.parent
     load_dotenv(_PROJECT_ROOT / ".env")
 except ImportError:
@@ -40,6 +39,14 @@ def _build_portfolio_path() -> str:
 
 def _build_checkpoint_file() -> str:
     return os.path.join(_DATA_DIR, "last_checkpoint.jsonl") if _DATA_DIR else ""
+
+
+def _env_int(key: str, default: int) -> int:
+    """Read an int env var, falling back to ``default`` on absence/garbage."""
+    try:
+        return int(os.environ.get(key, str(default)))
+    except ValueError:
+        return default
 
 
 @dataclass
@@ -99,6 +106,20 @@ class HarnessConfig:
 
 
 @dataclass
+class MiningConfig:
+    """ColdSkill candidate-mining thresholds (spec 候选挖掘, P1).
+
+    Defaults are spec values (≥3 times / 7 days, 30-day data span) and
+    can be overridden via the ``mining`` YAML section or the
+    SECRETARY_MINING_* environment variables.
+    """
+
+    min_count: int = field(default_factory=lambda: _env_int("SECRETARY_MINING_MIN_COUNT", 3))
+    window_days: int = field(default_factory=lambda: _env_int("SECRETARY_MINING_WINDOW_DAYS", 7))
+    data_span_days: int = field(default_factory=lambda: _env_int("SECRETARY_MINING_DATA_SPAN_DAYS", 30))
+
+
+@dataclass
 class Config:
     tick_interval: int = 30
     data: DataConfig = field(default_factory=DataConfig)
@@ -106,6 +127,7 @@ class Config:
     notify: NotifyConfig = field(default_factory=NotifyConfig)
     engine: EngineConfig = field(default_factory=EngineConfig)
     harness: HarnessConfig = field(default_factory=HarnessConfig)
+    mining: MiningConfig = field(default_factory=MiningConfig)
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
@@ -180,6 +202,9 @@ def load_config(path: str | Path | None = None) -> Config:
         hermes=harness_raw.get("hermes", {}),
     )
 
+    mining_raw = raw.get("mining", {})
+    mining_cfg = MiningConfig(**mining_raw)
+
     return Config(
         tick_interval=raw.get("tick_interval", 30),
         data=data_cfg,
@@ -187,4 +212,5 @@ def load_config(path: str | Path | None = None) -> Config:
         notify=notify_cfg,
         engine=engine_cfg,
         harness=harness_cfg,
+        mining=mining_cfg,
     )
