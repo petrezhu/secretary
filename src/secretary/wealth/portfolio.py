@@ -342,6 +342,30 @@ def parse_tencent_prices(raw_text: str) -> dict[str, float]:
     return prices
 
 
+def parse_tencent_day_changes(raw_text: str) -> dict[str, float]:
+    """Parse Tencent quote API response into code -> day change pct.
+
+    parts[32] is the day change percentage (vs previous close).
+    Missing/garbage fields yield 0.0 so downstream comparisons degrade
+    gracefully instead of crashing.
+    """
+    changes: dict[str, float] = {}
+    for line in raw_text.strip().split("\n"):
+        line = line.strip().rstrip(";")
+        if "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        code_part = key.split("_", 1)[-1] if "_" in key else key
+        value = value.strip('"')
+        parts = value.split("~")
+        if len(parts) > 32:
+            try:
+                changes[code_part] = float(parts[32])
+            except (ValueError, IndexError):
+                continue
+    return changes
+
+
 async def fetch_prices(
     codes: list[str],
     session: aiohttp.ClientSession | None = None,
@@ -355,8 +379,22 @@ async def fetch_prices(
     Returns:
         dict of code -> current price
     """
+    prices, _ = await fetch_price_data(codes, session)
+    return prices
+
+
+async def fetch_price_data(
+    codes: list[str],
+    session: aiohttp.ClientSession | None = None,
+) -> tuple[dict[str, float], dict[str, float]]:
+    """Fetch current prices AND day-change pct from Tencent API (one call).
+
+    Returns:
+        (prices, day_changes) — both keyed by code. day_changes[code] is the
+        percentage change vs previous close (当日涨跌幅).
+    """
     if not codes:
-        return {}
+        return {}, {}
 
     own_session = session is None
     if own_session:
@@ -367,10 +405,10 @@ async def fetch_prices(
         url = TENCENT_QUOTE_URL.format(codes=codes_str)
         async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as resp:
             raw = await resp.text(encoding="gbk")
-        return parse_tencent_prices(raw)
+        return parse_tencent_prices(raw), parse_tencent_day_changes(raw)
     except Exception:
         logger.exception("Failed to fetch prices from Tencent API")
-        return {}
+        return {}, {}
     finally:
         if own_session:
             await session.close()
@@ -382,10 +420,14 @@ async def fetch_prices(
 def _compute_holding(
     raw: dict[str, Any],
     prices: dict[str, float],
+    day_changes: dict[str, float] | None = None,
 ) -> tuple[Holding, float, float, str | None]:
     """Compute a single holding's P&L.
 
     Returns (holding, cost, market_value, significant_move_or_none).
+    significant_move is based on DAY change (当日涨跌幅 vs previous close),
+    NOT cumulative pnl — cumulative % flags long-held winners/losers on
+    every check (2026-09-16 user request).
     """
     code = raw.get("code", "")
     name = raw.get("name", code)
@@ -443,9 +485,17 @@ def _compute_holding(
     )
 
     significant_move = None
-    if cost > 0 and abs(pnl_pct) >= 3.0:
-        direction = "涨" if pnl_pct > 0 else "跌"
-        significant_move = f"{name}{direction}{abs(pnl_pct):.1f}%"
+    # Day-change based (当日涨跌幅), threshold applied to abs(day change).
+    # Only stocks/ETFs have day data; OTC funds & gold use cumulative.
+    day_pct = (day_changes or {}).get(code)
+    if day_pct is None:
+        # No day data (fund_otc/gold/fetch miss): fall back to cumulative pnl_pct
+        if cost > 0 and abs(pnl_pct) >= 3.0:
+            direction = "涨" if pnl_pct > 0 else "跌"
+            significant_move = f"{name}{direction}{abs(pnl_pct):.1f}%"
+    elif abs(day_pct) >= 3.0:
+        direction = "涨" if day_pct > 0 else "跌"
+        significant_move = f"{name}{direction}{abs(day_pct):.1f}%"
 
     return holding, cost, market_value, significant_move
 
@@ -454,6 +504,7 @@ def compute_portfolio(
     holdings_data: list[dict[str, Any]],
     prices: dict[str, float],
     move_threshold: float = 3.0,
+    day_changes: dict[str, float] | None = None,
 ) -> PortfolioSnapshot:
     """Compute portfolio P&L from holdings data and current prices.
 
@@ -461,6 +512,8 @@ def compute_portfolio(
         holdings_data: list of holding dicts (from JSON)
         prices: dict of code -> current price
         move_threshold: percentage threshold for significant moves (default 3%)
+        day_changes: dict of code -> day change pct (当日涨跌幅). Significant
+            moves use this when present; cumulative pnl is the fallback.
 
     Returns:
         PortfolioSnapshot with computed values
@@ -479,7 +532,7 @@ def compute_portfolio(
         if h_type == "gold_accumulate" and float(h.get("grams", 0)) <= 0:
             continue
 
-        holding, cost, mv, move = _compute_holding(h, prices)
+        holding, cost, mv, move = _compute_holding(h, prices, day_changes)
         holdings.append(holding)
         total_cost += cost
         total_market_value += mv
@@ -503,6 +556,7 @@ def compute_portfolio_from_data(
     portfolio_data: PortfolioData,
     prices: dict[str, float],
     move_threshold: float = 3.0,
+    day_changes: dict[str, float] | None = None,
 ) -> PortfolioSnapshot:
     """Compute portfolio snapshot from PortfolioData (full format).
 
@@ -510,6 +564,7 @@ def compute_portfolio_from_data(
         portfolio_data: PortfolioData with holdings, cash, closed positions, pending actions
         prices: dict of code -> current price
         move_threshold: significant move threshold (default 3%)
+        day_changes: dict of code -> day change pct (当日涨跌幅)
 
     Returns:
         PortfolioSnapshot with computed values including cash and total wealth
@@ -554,7 +609,7 @@ def compute_portfolio_from_data(
         for h in portfolio_data.holdings
     ]
 
-    snapshot = compute_portfolio(holdings_raw, prices, move_threshold)
+    snapshot = compute_portfolio(holdings_raw, prices, move_threshold, day_changes)
     snapshot.cash = portfolio_data.cash
     snapshot.closed_positions = portfolio_data.closed_positions
     snapshot.pending_actions = portfolio_data.pending_actions
@@ -585,8 +640,8 @@ async def get_portfolio_snapshot(
         return PortfolioSnapshot()
 
     codes = get_all_stock_codes(portfolio_data)
-    prices = await fetch_prices(codes, session)
-    return compute_portfolio_from_data(portfolio_data, prices, move_threshold)
+    prices, day_changes = await fetch_price_data(codes, session)
+    return compute_portfolio_from_data(portfolio_data, prices, move_threshold, day_changes)
 
 
 # ── Formatting ──────────────────────────────────────────────────────────────
@@ -644,7 +699,7 @@ def format_portfolio_report(snapshot: PortfolioSnapshot) -> str:
 
     if snapshot.significant_moves:
         lines.append("")
-        lines.append("⚠️ 大幅波动: " + "、".join(snapshot.significant_moves))
+        lines.append("⚠️ 当日大幅波动: " + "、".join(snapshot.significant_moves))
 
     # Closed positions summary
     if snapshot.closed_positions:

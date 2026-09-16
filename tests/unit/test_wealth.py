@@ -42,6 +42,7 @@ from secretary.wealth.portfolio import (
     get_all_stock_codes,
     load_portfolio,
     load_portfolio_data,
+    parse_tencent_day_changes,
     parse_tencent_prices,
 )
 from secretary.wealth.qdii import (
@@ -234,6 +235,7 @@ class TestPortfolioCompute:
         assert snap.total_cost == 188000.0
 
     def test_significant_moves_detection(self):
+        """No day data → falls back to cumulative pnl_pct (legacy behavior)."""
         holdings = [
             {"code": "sh600519", "name": "贵州茅台", "shares": 100, "cost_price": 100.0},
         ]
@@ -242,6 +244,22 @@ class TestPortfolioCompute:
         assert len(snap.significant_moves) == 1
         assert "涨" in snap.significant_moves[0]
 
+    def test_significant_moves_uses_day_change(self):
+        """Day change is the primary signal (2026-09-16 user request)."""
+        holdings = [
+            {"code": "sh600519", "name": "贵州茅台", "shares": 100, "cost_price": 10.0},
+        ]
+        prices = {"sh600519": 105.0}  # cumulative +950% but DAY change small
+        day_changes = {"sh600519": 1.0}  # +1% today → NOT significant
+        snap = compute_portfolio(holdings, prices, move_threshold=3.0, day_changes=day_changes)
+        assert len(snap.significant_moves) == 0
+
+        # Same holding, day drop -3.5% → significant
+        day_changes = {"sh600519": -3.5}
+        snap = compute_portfolio(holdings, prices, move_threshold=3.0, day_changes=day_changes)
+        assert len(snap.significant_moves) == 1
+        assert "跌" in snap.significant_moves[0] and "3.5%" in snap.significant_moves[0]
+
     def test_no_significant_moves(self):
         holdings = [
             {"code": "sh600519", "name": "贵州茅台", "shares": 100, "cost_price": 100.0},
@@ -249,6 +267,19 @@ class TestPortfolioCompute:
         prices = {"sh600519": 101.0}  # +1%
         snap = compute_portfolio(holdings, prices, move_threshold=3.0)
         assert len(snap.significant_moves) == 0
+
+    def test_parse_tencent_day_changes(self):
+        # Real response has 88 fields; day change pct sits at index 32
+        raw = (
+            'v_sh601288="1~农业银行~601288~3~4~5~6~7~8~9~10~11~12~13~14~15~'
+            '16~17~18~19~20~21~22~23~24~25~26~27~28~29~30~31~-0.58~6.93";'
+        )
+        changes = parse_tencent_day_changes(raw)
+        assert changes["sh601288"] == -0.58
+
+    def test_parse_tencent_day_changes_missing_field(self):
+        raw = 'v_sh600519="1~贵州茅台~600519~100~10~100~1~1~1~";'
+        assert parse_tencent_day_changes(raw) == {}
 
     def test_fallback_to_cost_price(self):
         """When price not available, fallback to cost price (zero P&L)."""

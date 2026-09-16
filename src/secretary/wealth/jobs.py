@@ -157,7 +157,7 @@ class WealthJobs:
             await self.dispatcher.send(
                 Notification(
                     level=NotificationLevel.WARNING,
-                    title="持仓大幅波动",
+                    title="持仓当日大幅波动",
                     body=report,
                     channel="qq",
                 )
