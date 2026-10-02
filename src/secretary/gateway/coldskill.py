@@ -57,6 +57,7 @@ class SkillManifest(BaseModel):
     target: str | None = None
     handler: str | None = None
     entry: str = "run"
+    patterns: list[str] = Field(default_factory=list)  # script mode regex patterns
     priority: int = 100
     enabled: bool = True
     tags: list[str] = Field(default_factory=list)
@@ -68,8 +69,10 @@ class SkillManifest(BaseModel):
             return f"id '{self.id}' not snake_case"
         if self.mode not in _VALID_MODES:
             return f"unknown mode '{self.mode}'"
-        if not self.keywords or any(not str(k).strip() for k in self.keywords):
-            return "keywords must be non-empty"
+        if not self.keywords and not self.patterns:
+            return "keywords or patterns must be non-empty"
+        if self.keywords and any(not str(k).strip() for k in self.keywords):
+            return "keywords contains blank entries"
         if self.mode == "literal" and not self.replies:
             return "literal mode requires replies"
         if self.mode == "attach" and not self.target:
@@ -109,17 +112,23 @@ class _LiteralSkillHandler:
 
 
 class _ScriptSkillHandler:
-    """Exact-keyword match -> deterministic ``run(ctx)`` result."""
+    """Pattern/keyword match -> deterministic ``run(ctx)`` result."""
 
-    def __init__(self, name: str, keywords: set[str], run_fn: Any):
+    def __init__(self, name: str, keywords: set[str], run_fn: Any, patterns: list[re.Pattern] | None = None):
         self.name = name
         self.keywords = keywords
-        self.patterns = []
+        self.patterns = patterns or []
         self._run_fn = run_fn
 
     async def handle(self, ctx: IntentContext) -> str | None:
+        import asyncio
         try:
-            result = self._run_fn(ctx)
+            # Run the script's synchronous run() in a worker thread so a slow/
+            # blocking network call (e.g. FRED download on cache miss) never
+            # freezes the FastAPI event loop. A frozen loop would make EVERY
+            # concurrent /api/inbound request time out and fail open — turning
+            # even trivial intents like "你好" into agent (approve=true).
+            result = await asyncio.to_thread(self._run_fn, ctx)
             return result if isinstance(result, str) else None
         except Exception as exc:
             logger.warning("ColdSkill '%s' run failed: %s", self.name, exc)
@@ -178,17 +187,26 @@ class ColdSkillLoader:
     # ── Internals ───────────────────────────────────────────────────────
 
     def _signature(self):
-        """Repo change signature: dir mtime + sorted skill-dir names+mtimes.
+        """Repo change signature: dir mtimes + file mtimes (recursive 1 level).
 
-        Directory-name changes are included because some filesystems have
-        coarse mtime granularity — a brand-new skill dir must still trigger
-        a reload even if the parent mtime didn't move.
+        文件内容修改（如改script.py）必须触发重载——旧实现只看目录mtime，
+        编辑已有技能文件时目录mtime不变，热插拔静默失效（2026-09-20教训）。
         """
         try:
-            parts = [("mtime", self.dir.stat().st_mtime)]
+            parts: list[tuple] = [("mtime", self.dir.stat().st_mtime)]
             for entry in sorted(self.dir.iterdir()):
-                if entry.is_dir():
-                    parts.append((entry.name, entry.stat().st_mtime))
+                if not entry.is_dir() or entry.name.startswith("."):
+                    continue
+                parts.append((entry.name, "dir", int(entry.stat().st_mtime)))
+                # Include file-level mtimes so content edits reload too
+                for f in sorted(entry.iterdir()):
+                    if f.is_file():
+                        try:
+                            parts.append(
+                                (entry.name, f.name, int(f.stat().st_mtime))
+                            )
+                        except OSError:
+                            continue
             return tuple(parts)
         except OSError:
             return None
@@ -315,7 +333,17 @@ class ColdSkillLoader:
             name = f"coldskill:{manifest.id}"
             keywords = set(manifest.keywords)
             if manifest.mode == "script":
-                handler = _ScriptSkillHandler(name, keywords, skill.run_fn)
+                patterns = None
+                if manifest.patterns:
+                    try:
+                        patterns = [re.compile(p) for p in manifest.patterns]
+                    except re.error as exc:
+                        logger.warning(
+                            "ColdSkill %s: invalid pattern %r (%s), falling back to keywords",
+                            manifest.id, manifest.patterns, exc,
+                        )
+                        patterns = None
+                handler = _ScriptSkillHandler(name, keywords, skill.run_fn, patterns)
             else:
                 handler = _LiteralSkillHandler(name, keywords, manifest.replies)
             self._insert_before_fallback(registry, handler)
