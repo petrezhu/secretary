@@ -9,6 +9,7 @@ Secretary 是一个**主动式**个人助理，不等用户提问，而是持续
 - 🖥️ **服务器监控** — 内存/CPU/磁盘阈值告警，服务存活检测，自动修复
 - 🎯 **目标督导** — 逾期目标检测、能量状态评估、每日焦点推荐、自适应计划调整
 - 💰 **财富引擎** — A股持仓快照、板块分析、国家队信号、QDII 监控、风控决策
+- 📡 **主动消息订阅** — FreshRSS 统一筛选，Secretary 轮询专用分类并低打扰推送新条目
 - 📬 **通知分发** — QQ Bot + Email 双通道，按级别(INFO/WARNING/CRITICAL)分级推送
 - ☀️ **早安简报** — 每日 8:00 自动生成，含今日重点、待办任务、卡住目标、昨日完成
 - 🤖 **Hermes 集成** — 通过 Gateway 插件拦截 QQ 消息，简单意图直接回复，复杂查询交给 Agent
@@ -79,6 +80,13 @@ Secretary 是一个**主动式**个人助理，不等用户提问，而是持续
 | `redemption.py` | 赎回分析 |
 | `monitor.py` | 个股关键词监控 |
 | `jobs.py` | 财富引擎定时任务集合 |
+
+### subscriptions/ — 主动消息订阅
+| 模块 | 功能 |
+|------|------|
+| `freshrss.py` | 通过 GReader API 轮询专用分类；高水位分页、持久化 outbox、批量 QQ 推送 |
+
+职责边界：FreshRSS 负责聚合、过滤、标签和已读状态；Secretary 只负责发现专用流中的新条目并主动送达，不修改 FreshRSS 已读状态。默认流为 `user/-/label/Secretary`，避免把全部 RSS 未读变成消息轰炸。
 
 ### gateway/ — 用户交互入口
 | 模块 | 功能 |
@@ -176,6 +184,12 @@ cp .env.example .env
 | `SECRETARY_PORTFOLIO_PATH` | 持仓数据文件路径 | 财富功能需要 |
 | `SMTP_USER` / `SMTP_PASSWORD` | 邮件通知配置 | 邮件功能需要 |
 | `QQ_APP_ID` / `QQ_CLIENT_SECRET` | QQ Bot 配置 | QQ 功能需要 |
+| `SECRETARY_FRESHRSS_ENABLED` | 启用 FreshRSS 主动消息订阅 | 否（默认关闭） |
+| `SECRETARY_FRESHRSS_URL` / `SECRETARY_FRESHRSS_USERNAME` | FreshRSS 地址与用户名 | 主动订阅需要 |
+| `SECRETARY_FRESHRSS_API_PASSWORD` | FreshRSS 独立 API 密码 | 主动订阅需要 |
+| `SECRETARY_FRESHRSS_STREAM_ID` | 监控的 GReader stream ID | 否（默认 `user/-/label/Secretary`） |
+
+启用前，在 FreshRSS 中创建 `Secretary` 分类并把需要主动推送的订阅归入该分类。第一次成功轮询只建立当前分类的高水位，不推送历史积压；之后每 5 分钟分页检查一次。新条目先写入本地 outbox，发送失败或 FreshRSS 已读状态变化都不会丢失；通道语义为 at-least-once，极端情况下（QQ 已发送、outbox 确认写盘前进程崩溃）可能重复一批。
 
 ### 本地配置（不入 git）
 
@@ -250,6 +264,24 @@ journalctl -u secretary -f
 | WARNING | QQ | 批量推送，最多 5条/小时 |
 | INFO | QQ | 定时推送，每日 08:00 |
 
+## 推送约定（增量，不携带本地私有历史）
+
+GitHub 远端（`petrezhu/secretary`，public）是一份**不含隐私信息/提交**的干净版本。本仓库的本地 Git 历史（bundle 迁移而来）可能夹带隐私或不该公开的提交，**绝不能**用本地 HEAD 或整条本地历史强推覆盖远端。
+
+因此修复/变更推送到 GitHub 采用**文件级增量**方式：只把改动文件的内容同步到 GitHub `main` 的干净快照上，作为干净的新提交推上去，不携带其它本地历史。**绝不对远端 `main` 做 force-push。**
+
+现成脚本：`scripts/push-incremental-fixes.sh`
+
+```bash
+# 预演（浅克隆 GitHub main → 应用改动 → 不推送）
+./scripts/push-incremental-fixes.sh --dry-run
+
+# 真实推送（对配置里 REPOS 数组的每个仓库）
+./scripts/push-incremental-fixes.sh
+```
+
+脚本按 `REPOS` 数组（`<仓库名>|<本地路径>|<修复commit,...>`）对每个仓库：浅克隆 GitHub `main`（`--depth=1`）→ 提取每个修复 commit 改动（`diff-tree --name-status -r`）的 M/A 文件 → 把本地修复后的文件内容复制进干净克隆 → commit → `push origin main`。推送前应先用 `git ls-remote` 确认远端当前 HEAD，并用 `git credential fill` 程序化取 token（勿打印到会话）。
+
 ## 项目结构
 
 ```
@@ -278,6 +310,7 @@ secretary/
 │   ├── engine/               # 引擎层
 │   ├── coach/                # 督导层
 │   ├── wealth/               # 财富引擎
+│   ├── subscriptions/        # FreshRSS 主动消息订阅
 │   ├── gateway/              # 网关层
 │   ├── harness/              # Agent 引擎抽象
 │   ├── data/                 # 数据层
